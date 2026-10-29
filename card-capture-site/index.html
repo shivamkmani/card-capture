@@ -33,6 +33,7 @@
 html,body{background:var(--paper);color:var(--ink)}
 body{font:15px/1.5 var(--body);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 48px}
 button,select,input,textarea{font:inherit;color:inherit}
+button{touch-action:manipulation}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .wrap{max-width:1180px;margin:0 auto;display:grid;gap:28px}
 
@@ -94,6 +95,9 @@ kbd{font:500 .72rem/1 var(--mono);border:1px solid currentColor;border-radius:4p
 .orient button{display:inline-flex;align-items:center;gap:7px;border:0;background:transparent;border-radius:7px;padding:6px 11px;cursor:pointer;color:var(--muted);font-size:.86rem;font-weight:500}
 .orient button svg{flex:none}
 .orient button[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent)}
+.iconbtn{display:inline-grid;place-items:center;width:44px;height:44px;border:1px solid var(--line);background:var(--surface);border-radius:var(--r);cursor:pointer;color:var(--ink);padding:0}
+.iconbtn[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent);border-color:transparent}
+.mobile-only{display:none}
 .controls select{border:1px solid var(--line);background:var(--surface);border-radius:var(--r);padding:8px 10px;max-width:100%;min-width:0}
 .controls .spacer{flex:1}
 
@@ -158,6 +162,12 @@ tr.example td{color:var(--muted);font-style:italic}
 .copybox{width:100%;min-height:120px;font:.8rem var(--mono);border:1px solid var(--line);border-radius:8px;background:var(--paper);padding:10px}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--paper);padding:10px 18px;border-radius:999px;font-weight:500;font-size:.9rem;opacity:0;transition:.25s;pointer-events:none;z-index:20;max-width:calc(100vw - 32px);text-align:center}
 .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+.cards{display:none}
+.lightbox{position:fixed;inset:0;z-index:30;background:rgba(7,8,11,.94);display:grid;grid-template-rows:auto 1fr;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
+.lightbox .lb-bar{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 16px;color:#eef1f6;font:500 .8rem/1 var(--mono);letter-spacing:.08em;text-transform:uppercase}
+.lightbox .lb-scroll{overflow:auto;display:grid;place-items:center;padding:8px}
+.lightbox img{width:100%;max-width:none;height:auto}
+.lightbox.zoomed img{width:220%}
 
 @media (max-width:860px){
   .scan,.vgrid{grid-template-columns:minmax(0,1fr)}
@@ -168,6 +178,63 @@ tr.example td{color:var(--muted);font-style:italic}
   .vimgs{grid-template-columns:minmax(0,1fr)}
   .side h2,.verify-head h2{font-size:1.35rem}
 }
+/* phones: compact header, viewfinder sized to the screen, actions in a bottom bar within thumb reach */
+@media (max-width:700px){
+  body{font-size:15px;padding-block:0 calc(150px + env(safe-area-inset-bottom,0px))}
+  .wrap{gap:20px}
+  .top{gap:8px 12px;padding-block:12px 10px}
+  .brand{font-size:1.1rem;gap:8px}
+  .brand svg{width:24px;height:18px}
+  .engine{margin-left:auto;font-size:.62rem}
+  .steps{order:3;flex:1 1 100%;gap:4px;justify-content:space-between}
+  .steps li{padding:4px 8px 4px 4px;font-size:.8rem}
+  .steps li:not(.on) span{display:none}
+  .stage{width:min(100%, calc((100vh - 250px) * var(--arn,1.78)));width:min(100%, calc((100dvh - 250px) * var(--arn,1.78)));margin-inline:auto;border-radius:12px}
+  .cue{top:10px;padding-inline:10px}
+  .cue span{font-size:.82rem;padding:6px 12px;text-align:center}
+  .guide .dim{font-size:.6rem;bottom:8px}
+  .controls{position:fixed;left:0;right:0;bottom:0;z-index:15;margin:0;background:var(--surface);border-top:1px solid var(--line);
+    padding:10px max(16px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));gap:8px;flex-wrap:wrap;justify-content:space-between}
+  #captureBtn{order:10;flex:1 1 100%;justify-content:center;min-height:54px;font-size:1.05rem;border-radius:14px}
+  .controls kbd,.controls .spacer,#camSel{display:none}
+  .controls .btn{min-height:44px}
+  #skipBack{flex:1}
+  .orient{padding:2px}
+  .orient button{min-height:38px;padding:6px 10px}
+  .orient button span{display:none}
+  .mobile-only{display:inline-grid}
+  .mobile-only[hidden]{display:none!important}
+  .side{gap:12px}
+  .side .eyebrow{display:none}
+  .side h2{font-size:1.2rem}
+  .side p,.note{font-size:.85rem}
+  .thumbs{gap:10px}
+  .verify{padding:16px;border-radius:12px;gap:16px}
+  .verify-head h2{font-size:1.3rem}
+  .vactions{position:fixed;left:0;right:0;bottom:0;z-index:15;background:var(--surface);border-top:1px solid var(--line);
+    padding:10px max(16px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));flex-wrap:nowrap}
+  .vactions .btn{flex:1;justify-content:center;min-height:50px;padding-inline:10px;text-align:center}
+  .vactions #confirm{flex:1.6}
+  .vgrid{gap:16px}
+  .vimgs{position:static;grid-template-columns:1fr 1fr;gap:10px}
+  .vimgs img{max-height:150px;cursor:pointer}
+  .form{grid-template-columns:minmax(0,1fr);gap:12px}
+  .form input,.form textarea,.field-row select,.copybox{font-size:16px}
+  .form input{padding:11px 12px;min-height:46px}
+  .ledger-actions{display:grid;grid-template-columns:1fr 1fr;width:100%;gap:8px}
+  .ledger-actions .btn{justify-content:center;min-height:46px}
+  .ledger-head p{font-size:.85rem}
+  .tablewrap{display:none}
+  .cards{display:grid;gap:10px}
+  .toast{bottom:calc(150px + env(safe-area-inset-bottom,0px))}
+}
+.ccard{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:grid;gap:4px;min-width:0}
+.ccard.example{opacity:.75}
+.ccard .nm{font:600 1rem/1.3 var(--body)}
+.ccard .sub{color:var(--muted);font-size:.86rem}
+.ccard .ln{font:.84rem/1.45 var(--mono);overflow-wrap:anywhere}
+.ccard .rowbtns{margin-top:8px}
+.ccard .rowbtns button{min-height:38px;padding:6px 14px;font-size:.85rem}
 @media (prefers-reduced-motion:reduce){
   .flip .card3d,.reading .bar.indef i{animation:none}
   *{transition:none!important}
@@ -183,10 +250,10 @@ tr.example td{color:var(--muted);font-style:italic}
     Card Capture
   </div>
   <ol class="steps" id="steps" aria-label="Progress">
-    <li data-s="front"><b>1</b>Front</li>
-    <li data-s="back"><b>2</b>Back</li>
-    <li data-s="verify"><b>3</b>Verify</li>
-    <li data-s="table"><b>4</b>Copy to Excel</li>
+    <li data-s="front"><b>1</b><span>Front</span></li>
+    <li data-s="back"><b>2</b><span>Back</span></li>
+    <li data-s="verify"><b>3</b><span>Verify</span></li>
+    <li data-s="table"><b>4</b><span>Copy to Excel</span></li>
   </ol>
   <span class="engine" id="engine"><i></i><span id="engineTxt">Starting…</span></span>
 </header>
@@ -221,10 +288,12 @@ tr.example td{color:var(--muted);font-style:italic}
         <input type="file" id="fileIn" accept="image/*" hidden>
         <span class="spacer"></span>
         <div class="orient" id="orient" role="group" aria-label="Card orientation">
-          <button type="button" data-o="landscape" aria-pressed="true"><svg width="18" height="12" viewBox="0 0 18 12" aria-hidden="true"><rect x="1" y="1" width="16" height="10" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>Landscape</button>
-          <button type="button" data-o="portrait" aria-pressed="false"><svg width="12" height="18" viewBox="0 0 12 18" aria-hidden="true"><rect x="1" y="1" width="10" height="16" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>Portrait</button>
+          <button type="button" data-o="landscape" aria-pressed="true" aria-label="Landscape card"><svg width="18" height="12" viewBox="0 0 18 12" aria-hidden="true"><rect x="1" y="1" width="16" height="10" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg><span>Landscape</span></button>
+          <button type="button" data-o="portrait" aria-pressed="false" aria-label="Portrait card"><svg width="12" height="18" viewBox="0 0 12 18" aria-hidden="true"><rect x="1" y="1" width="10" height="16" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg><span>Portrait</span></button>
         </div>
         <select id="camSel" aria-label="Camera" hidden></select>
+        <button class="iconbtn" id="torchBtn" type="button" aria-label="Torch" aria-pressed="false" hidden><svg width="18" height="20" viewBox="0 0 18 20" aria-hidden="true"><path d="M10 1L3 11h5l-1 8 8-11h-5l1-7z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></button>
+        <button class="iconbtn mobile-only" id="camCycle" type="button" aria-label="Switch camera" hidden><svg width="22" height="18" viewBox="0 0 22 18" aria-hidden="true"><rect x="1" y="4" width="20" height="13" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M7 4l2-3h4l2 3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8 10.5a3 3 0 0 1 5.2-2M14 10.5a3 3 0 0 1-5.2 2" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></button>
       </div>
     </div>
 
@@ -284,17 +353,23 @@ tr.example td{color:var(--muted);font-style:italic}
         <button class="btn primary" id="copyAll" type="button">Copy with headers</button>
         <button class="btn" id="copyRows" type="button">Copy rows only</button>
         <button class="btn" id="csvBtn" type="button">Download .csv</button>
+        <button class="btn" id="shareBtn" type="button" hidden>Share .csv</button>
         <button class="btn ghost" id="clearAll" type="button">Clear</button>
       </div>
     </div>
     <div class="tablewrap"><table id="table"><thead></thead><tbody></tbody></table></div>
+    <div class="cards" id="cards"></div>
     <div id="fallbackCopy" hidden style="display:grid;gap:6px">
-      <p class="note warn" style="margin:0">Your browser blocked automatic copying. The text below is selected: press Ctrl+C (or ⌘C) to copy it.</p>
+      <p class="note warn" style="margin:0" id="fallbackMsg">Your browser blocked automatic copying. The text below is selected: press Ctrl+C (or ⌘C) to copy it.</p>
       <textarea class="copybox" id="copyBox" readonly></textarea>
     </div>
   </section>
 </main>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="lightbox" id="lightbox" hidden role="dialog" aria-label="Card photo">
+  <div class="lb-bar"><span id="lbTitle">Front</span><span style="display:flex;gap:8px"><button class="btn" id="lbZoom" type="button">Zoom</button><button class="btn light" id="lbClose" type="button">Close</button></span></div>
+  <div class="lb-scroll"><img id="lbImg" alt=""></div>
+</div>
 
 <script>
 (() => {
@@ -366,6 +441,7 @@ function setState(s){
   if(s!=='reading') cap.disabled=false;
   $('uploadBtn').hidden = !camOn || s==='reading';
   $('orient').hidden = !camOn || s==='reading';
+  if(!camOn) $('torchBtn').hidden=true;
 }
 
 function showLive(){
@@ -376,7 +452,7 @@ function showLive(){
 // ---------- camera ----------
 function layoutGuide(){
   const vw=video.videoWidth||1280, vh=video.videoHeight||720;
-  stage.style.setProperty('--ar', `${vw}/${vh}`);
+  stage.style.setProperty('--ar', `${vw}/${vh}`); stage.style.setProperty('--arn', String(vw/vh));
   const sar=vw/vh;
   // guide box in fractions of the stage; its pixel aspect matches the card
   const ar=cardAR();
@@ -393,13 +469,13 @@ async function startCamera(deviceId){
   stopCamera();
   try{
     if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia) throw Object.assign(new Error('nosupport'),{name:'NotSupportedError'});
-    const v={width:{ideal:3840},height:{ideal:2160}};
+    const v={width:{ideal:3840},height:{ideal:2160},facingMode:{ideal:'environment'}};
     if(deviceId) v.deviceId={exact:deviceId};
     stream=await navigator.mediaDevices.getUserMedia({video:v,audio:false});
     video.srcObject=stream;
     await new Promise(r=>{ if(video.readyState>=1) r(); else video.onloadedmetadata=()=>r(); });
     await video.play().catch(()=>{});
-    camOn=true; layoutGuide();
+    camOn=true; layoutGuide(); setupTorch();
     listCameras();
   }catch(e){
     camOn=false; stage.style.setProperty('--ar','16/9');
@@ -417,14 +493,31 @@ async function startCamera(deviceId){
 async function listCameras(){
   try{
     const devs=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='videoinput');
-    const sel=$('camSel'); sel.hidden=devs.length<2;
+    const sel=$('camSel'); sel.hidden=devs.length<2; $('camCycle').hidden=devs.length<2; camList=devs;
     const cur=stream?.getVideoTracks()[0]?.getSettings().deviceId;
     sel.innerHTML=devs.map((d,i)=>`<option value="${d.deviceId}" ${d.deviceId===cur?'selected':''}>${esc(d.label||'Camera '+(i+1))}</option>`).join('');
   }catch{}
 }
 $('camSel').onchange=e=>startCamera(e.target.value);
+let camList=[];
+$('camCycle').onclick=()=>{
+  if(camList.length<2) return;
+  const cur=stream?.getVideoTracks()[0]?.getSettings().deviceId;
+  const i=camList.findIndex(d=>d.deviceId===cur); const next=camList[(i+1)%camList.length];
+  startCamera(next.deviceId).then(()=>toast(next.label||'Switched camera'));
+};
+function setupTorch(){
+  const tb=$('torchBtn'); tb.hidden=true; tb.setAttribute('aria-pressed','false');
+  try{ const t=stream?.getVideoTracks()[0]; if(t&&t.getCapabilities&&t.getCapabilities().torch) tb.hidden=false; }catch{}
+}
+$('torchBtn').onclick=async()=>{
+  const t=stream?.getVideoTracks()[0]; if(!t) return;
+  const on=$('torchBtn').getAttribute('aria-pressed')!=='true';
+  try{ await t.applyConstraints({advanced:[{torch:on}]}); $('torchBtn').setAttribute('aria-pressed',String(on)); }catch{ toast('This camera cannot use the torch.'); }
+};
 $('retryCam').onclick=()=>startCamera();
 window.addEventListener('resize',()=>{ if(camOn) layoutGuide(); });
+video.addEventListener('resize',()=>{ if(camOn) layoutGuide(); }); // phone rotated
 
 // ---------- capture ----------
 function canvasToBlob(c,q=.9){ return new Promise(r=>c.toBlob(b=>r(b),'image/jpeg',q)); }
@@ -800,17 +893,25 @@ function openVerify(c, note, isEdit){
   const imgs=[]; if(c.front) imgs.push(['Front',c.front.url]); if(c.back&&c.back!=='none') imgs.push(['Back',c.back.url]);
   $('vimgs').innerHTML=imgs.map(([l,u])=>`<figure><figcaption>${l}</figcaption><img src="${u}" alt="${l} of card"></figure>`).join('');
   $('vimgs').hidden=!imgs.length;
-  $('vimgs').querySelectorAll('img').forEach(im=>im.onclick=()=>{ im.classList.toggle('zoom'); im.style.width=im.classList.contains('zoom')?'200%':''; im.parentElement.style.overflow='auto'; });
+  $('vimgs').querySelectorAll('img').forEach(im=>im.onclick=()=>openLightbox(im.src,im.alt));
   $('form').innerHTML=FIELDS.map(([k,l])=>{
     const v=esc(c.data[k]||''); const wide=k==='address'||k==='notes';
     const empty=!c.data[k]&&k!=='notes'&&k!=='linkedin'?'<span class="empty">· not found</span>':'';
-    const ctl= wide ? `<textarea id="f_${k}" rows="2">${v}</textarea>` : `<input id="f_${k}" value="${v}" ${k==='email'?'type="email" inputmode="email"':''}${k==='mobile'||k==='office'?'inputmode="tel"':''}>`;
+    const attrs = k==='email' ? 'type="email" inputmode="email" autocapitalize="off" autocorrect="off" spellcheck="false"'
+      : (k==='mobile'||k==='office') ? 'type="tel" inputmode="tel"'
+      : (k==='website'||k==='linkedin') ? 'inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false"'
+      : (k==='name'||k==='company') ? 'autocapitalize="words" autocorrect="off" spellcheck="false"' : 'autocapitalize="sentences"';
+    const ctl= wide ? `<textarea id="f_${k}" rows="2" ${attrs}>${v}</textarea>` : `<input id="f_${k}" value="${v}" enterkeyhint="next" ${attrs}>`;
     return `<div class="f ${wide?'wide':''}"><label for="f_${k}">${l} ${empty}</label>${ctl}</div>`;
   }).join('');
   $('raw').textContent=c.raw||''; $('rawBox').hidden=!c.raw; $('rawBox').open=false;
   $('verifySec').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});
-  setTimeout(()=>$('f_name')?.focus({preventScroll:true}),50);
+  if(!matchMedia('(pointer:coarse)').matches) setTimeout(()=>$('f_name')?.focus({preventScroll:true}),50);
 }
+function openLightbox(src,alt){ const lb=$('lightbox'); $('lbImg').src=src; $('lbTitle').textContent=alt; lb.classList.remove('zoomed'); $('lbZoom').textContent='Zoom'; lb.hidden=false; $('lbClose').focus(); }
+$('lbClose').onclick=()=>{ $('lightbox').hidden=true; };
+$('lbZoom').onclick=()=>{ const z=$('lightbox').classList.toggle('zoomed'); $('lbZoom').textContent=z?'Fit':'Zoom'; };
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&!$('lightbox').hidden) $('lightbox').hidden=true; });
 function readForm(){ const o={}; FIELDS.forEach(([k])=>{ o[k]=($('f_'+k).value||'').trim(); }); return o; }
 $('form').addEventListener('submit',e=>e.preventDefault());
 $('form').addEventListener('keydown',e=>{ if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)) $('confirm').click(); });
@@ -838,14 +939,21 @@ function renderTable(){
   t.tHead.innerHTML='<tr><th class="col-n">#</th>'+COLS.map(([,l])=>`<th>${l}</th>`).join('')+'<th></th></tr>';
   const list=rows.length?rows:[EXAMPLE];
   t.tBodies[0].innerHTML=list.map((r,i)=>`<tr class="${rows.length?'':'example'}"><td class="col-n">${rows.length?i+1:'<span class="chip">Example</span>'}</td>`+COLS.map(([k])=>`<td class="${k==='address'||k==='notes'?'wrap':''}" title="${esc(r[k]||'')}">${esc(r[k]||'')}</td>`).join('')+`<td>${rows.length?`<div class="rowbtns"><button type="button" data-edit="${i}">Edit</button><button type="button" data-del="${i}">Delete</button></div>`:''}</td></tr>`).join('');
+  $('cards').innerHTML=list.map((r,i)=>{
+    const sub=[r.title,r.company].filter(Boolean).map(esc).join(' · ');
+    const lines=[r.email,r.mobile,r.office,r.website].filter(Boolean).map(x=>`<div class="ln">${esc(x)}</div>`).join('');
+    return `<article class="ccard ${rows.length?'':'example'}">${rows.length?'':'<span><span class="chip">Example</span></span>'}<div class="nm">${esc(r.name||'(no name)')}</div>${sub?`<div class="sub">${sub}</div>`:''}${lines}${rows.length?`<div class="rowbtns"><button type="button" data-edit="${i}">Edit</button><button type="button" data-del="${i}">Delete</button></div>`:''}</article>`;
+  }).join('');
   $('count').textContent=rows.length?`(${rows.length})`:'';
-  ['copyAll','copyRows','csvBtn','clearAll'].forEach(id=>$(id).disabled=!rows.length);
+  ['copyAll','copyRows','csvBtn','clearAll','shareBtn'].forEach(id=>$(id).disabled=!rows.length);
 }
-$('table').addEventListener('click',e=>{
+function rowAction(e){
   const ed=e.target.closest('[data-edit]'), del=e.target.closest('[data-del]');
   if(del){ const i=+del.dataset.del; const btn=del; if(btn.dataset.armed){ rows.splice(i,1); save(); renderTable(); toast('Card deleted'); } else { btn.dataset.armed='1'; btn.textContent='Confirm'; setTimeout(()=>{ if(btn.isConnected){ delete btn.dataset.armed; btn.textContent='Delete'; } },3000); } }
   if(ed){ editingIdx=+ed.dataset.edit; openVerify({data:{...rows[editingIdx]},raw:'',front:null,back:null},'',true); }
-});
+}
+$('table').addEventListener('click',rowAction);
+$('cards').addEventListener('click',rowAction);
 const cellTSV=v=>String(v||'').replace(/[\t\r\n]+/g,'; ').trim();
 function toTSV(withHead){ const lines=rows.map(r=>COLS.map(([k])=>cellTSV(r[k])).join('\t')); if(withHead) lines.unshift(COLS.map(([,l])=>l).join('\t')); return lines.join('\r\n'); }
 const cellCSV=v=>{ v=String(v||''); return /[",\r\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; };
@@ -862,6 +970,16 @@ $('csvBtn').onclick=async()=>{
   if(dlApi){ try{ const r=await dlApi.save({filename,data}); if(r?.status==='saved') toast('CSV saved'); }catch(e){ if(e?.code!=='cancelled') toast('Download was not completed.'); } return; }
   try{ const u=URL.createObjectURL(new Blob([data],{type:'text/csv;charset=utf-8'})); const a=document.createElement('a'); a.href=u; a.download=filename; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(u),2000); }
   catch{ toast('Downloads are blocked here. Use "Copy with headers" instead.'); }
+};
+(function(){
+  let framed=true; try{ framed=window.self!==window.top; }catch{}
+  try{ if(!framed&&navigator.canShare&&navigator.canShare({files:[new File(['x'],'t.csv',{type:'text/csv'})]})) $('shareBtn').hidden=false; }catch{}
+  if(matchMedia('(pointer:coarse)').matches) $('fallbackMsg').textContent='Your browser blocked automatic copying. Press and hold the text below, choose Select All, then Copy.';
+})();
+$('shareBtn').onclick=async()=>{
+  const file=new File(['\uFEFF'+toCSV()],`business-cards-${today()}.csv`,{type:'text/csv'});
+  try{ await navigator.share({files:[file],title:'Business cards'}); }
+  catch(e){ if(e&&e.name!=='AbortError') toast('Sharing did not work here. Use Download .csv instead.'); }
 };
 $('clearAll').onclick=e=>{ const b=e.currentTarget; if(b.dataset.armed){ rows=[]; save(); renderTable(); delete b.dataset.armed; b.textContent='Clear'; toast('Table cleared'); } else { b.dataset.armed='1'; b.textContent=`Clear all ${rows.length}?`; setTimeout(()=>{ delete b.dataset.armed; b.textContent='Clear'; },3500); } };
 
