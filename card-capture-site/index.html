@@ -1,0 +1,912 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>[hidden]{display:none!important}body{margin:0}img{max-width:100%}</style>
+<title>Business Card Capture</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: viewfinder on the left, step panel on the right, Excel-ready ledger below. */
+:root{
+  --paper:#f3f4f7; --surface:#ffffff; --ink:#151922; --muted:#5a6272; --line:#dce0e8;
+  --accent:#2a4bd6; --accent-ink:#ffffff; --accent-soft:#e6ebfd;
+  --ok:#1d7f55; --warn:#a9521b; --stage:#0c0e13; --stage-ink:#eef1f6;
+  --display:"Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --body:"IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#0e1117; --surface:#161a22; --ink:#e7eaf0; --muted:#98a1b1; --line:#283040;
+  --accent:#8099ff; --accent-ink:#0a0e1a; --accent-soft:#1c2340;
+  --ok:#4cc38e; --warn:#e3925c; --stage:#07080b; --stage-ink:#eef1f6; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#0e1117; --surface:#161a22; --ink:#e7eaf0; --muted:#98a1b1; --line:#283040;
+  --accent:#8099ff; --accent-ink:#0a0e1a; --accent-soft:#1c2340;
+  --ok:#4cc38e; --warn:#e3925c; --stage:#07080b; --stage-ink:#eef1f6; color-scheme:dark}
+
+*{box-sizing:border-box}
+html,body{background:var(--paper);color:var(--ink)}
+body{font:15px/1.5 var(--body);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 48px}
+button,select,input,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{max-width:1180px;margin:0 auto;display:grid;gap:28px}
+
+/* header */
+.top{max-width:1180px;margin:0 auto;display:flex;flex-wrap:wrap;align-items:center;gap:14px 24px;padding-block:22px 18px}
+.brand{font:700 1.45rem/1 var(--display);letter-spacing:-.01em;display:flex;align-items:center;gap:10px}
+.brand svg{flex:none}
+.steps{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px;flex:1}
+.steps li{display:flex;align-items:center;gap:8px;padding:5px 12px 5px 6px;border-radius:999px;color:var(--muted);font-size:.86rem;border:1px solid transparent}
+.steps li b{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;font:500 .75rem/1 var(--mono);border:1px solid var(--line);background:var(--surface)}
+.steps li.on{color:var(--ink);border-color:var(--line);background:var(--surface)}
+.steps li.on b{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.steps li.done b{background:var(--accent-soft);color:var(--accent);border-color:transparent}
+.engine{font:500 .74rem/1.3 var(--mono);letter-spacing:.04em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:7px}
+.engine i{width:8px;height:8px;border-radius:50%;background:var(--muted)}
+.engine.ready i{background:var(--ok)}
+
+/* scanner */
+.scan{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(0,1fr);gap:24px;align-items:start}
+.stage{position:relative;width:100%;aspect-ratio:var(--ar,16/9);max-width:100%;background:var(--stage);border-radius:14px;overflow:hidden;color:var(--stage-ink)}
+.stage video,.stage img.still{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;max-width:none}
+.guide{position:absolute;left:var(--gx);top:var(--gy);width:var(--gw);height:var(--gh);pointer-events:none;border-radius:6px;box-shadow:0 0 0 100vmax rgba(0,0,0,.45)}
+.guide .c{position:absolute;width:26px;height:26px;border:3px solid #fff}
+.guide .c1{left:-3px;top:-3px;border-right:0;border-bottom:0;border-top-left-radius:8px}
+.guide .c2{right:-3px;top:-3px;border-left:0;border-bottom:0;border-top-right-radius:8px}
+.guide .c3{left:-3px;bottom:-3px;border-right:0;border-top:0;border-bottom-left-radius:8px}
+.guide .c4{right:-3px;bottom:-3px;border-left:0;border-top:0;border-bottom-right-radius:8px}
+.guide .dim{position:absolute;left:0;right:0;bottom:-26px;text-align:center;font:500 .7rem/1 var(--mono);letter-spacing:.08em;color:rgba(255,255,255,.75)}
+.cue{position:absolute;left:0;right:0;top:14px;display:flex;justify-content:center;pointer-events:none}
+.cue span{background:rgba(10,12,18,.72);backdrop-filter:blur(6px);padding:7px 14px;border-radius:999px;font-weight:500;font-size:.92rem}
+.flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;transition:opacity .35s}
+.flash.go{opacity:.8;transition:none}
+.flip{position:absolute;inset:0;display:grid;place-items:center;background:rgba(7,8,11,.78);text-align:center;padding:20px}
+.flip .card3d{width:120px;height:72px;border-radius:7px;background:linear-gradient(135deg,#fff,#cfd5e3);margin:0 auto 16px;animation:flip 1.4s ease-in-out infinite;transform-style:preserve-3d}
+@keyframes flip{0%,15%{transform:rotateY(0)}50%,65%{transform:rotateY(180deg)}100%{transform:rotateY(360deg)}}
+.flip strong{display:block;font:700 1.35rem/1.2 var(--display)}
+.reading{position:absolute;inset:0;display:grid;place-items:center;background:rgba(7,8,11,.7);text-align:center;padding:20px}
+.reading .bar{width:min(280px,70vw);height:6px;border-radius:3px;background:rgba(255,255,255,.18);margin:14px auto 0;overflow:hidden}
+.reading .bar i{display:block;height:100%;width:var(--p,8%);background:#fff;transition:width .3s}
+.reading .bar.indef i{width:35%;animation:slide 1.2s ease-in-out infinite}
+@keyframes slide{0%{transform:translateX(-100%)}100%{transform:translateX(290%)}}
+.camoff{position:absolute;inset:0;display:grid;place-items:center;padding:24px;text-align:center}
+.camoff .box{max-width:420px;display:grid;gap:12px;justify-items:center}
+.camoff h3{margin:0;font:700 1.15rem/1.25 var(--display)}
+.camoff p{margin:0;color:rgba(238,241,246,.78);font-size:.92rem}
+.drop.over{outline:2px dashed #fff;outline-offset:-10px}
+
+.controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:14px}
+.btn{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--surface);padding:9px 16px;border-radius:var(--r);cursor:pointer;font-weight:500;font-size:.93rem;line-height:1.2}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.07)}
+.btn.big{padding:12px 22px;font-size:1rem}
+.btn.ghost{background:transparent}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.light{background:#fff;color:#151922;border-color:#fff}
+kbd{font:500 .72rem/1 var(--mono);border:1px solid currentColor;border-radius:4px;padding:2px 5px;opacity:.7}
+.orient{display:inline-flex;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);padding:3px;gap:2px}
+.orient button{display:inline-flex;align-items:center;gap:7px;border:0;background:transparent;border-radius:7px;padding:6px 11px;cursor:pointer;color:var(--muted);font-size:.86rem;font-weight:500}
+.orient button svg{flex:none}
+.orient button[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent)}
+.controls select{border:1px solid var(--line);background:var(--surface);border-radius:var(--r);padding:8px 10px;max-width:100%;min-width:0}
+.controls .spacer{flex:1}
+
+.side{display:grid;gap:18px;min-width:0}
+.side h2{margin:0;font:700 1.6rem/1.15 var(--display);letter-spacing:-.01em;text-wrap:balance}
+.side p{margin:0;color:var(--muted)}
+.eyebrow{font:500 .72rem/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+.thumbs{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.slot{display:grid;gap:6px;min-width:0}
+.slot .lbl{display:flex;justify-content:space-between;align-items:baseline;font:500 .72rem/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.slot .lbl button{border:0;background:none;color:var(--accent);cursor:pointer;font:inherit;padding:0;text-transform:none;letter-spacing:0;font-size:.8rem}
+.slot .ph{aspect-ratio:1.65;max-width:100%;border:1.5px dashed var(--line);border-radius:8px;display:grid;place-items:center;color:var(--muted);font-size:.8rem;overflow:hidden;background:var(--surface)}
+.slot .ph img{width:100%;height:100%;object-fit:contain;background:var(--paper)}
+.slot .ph.filled{border-style:solid}
+.field-row{display:grid;gap:6px}
+.field-row label{font:500 .72rem/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.field-row select{border:1px solid var(--line);background:var(--surface);border-radius:var(--r);padding:8px 10px}
+.note{font-size:.86rem;color:var(--muted);border-left:3px solid var(--line);padding-left:12px}
+.note.warn{border-color:var(--warn);color:var(--ink)}
+
+/* verify */
+.verify{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px clamp(16px,3vw,28px) 24px;display:grid;gap:20px}
+.verify-head{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:end;justify-content:space-between}
+.verify-head h2{margin:0;font:700 1.6rem/1.15 var(--display)}
+.verify-head p{margin:4px 0 0;color:var(--muted);max-width:60ch}
+.vgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.8fr);gap:24px;align-items:start}
+.vimgs{display:grid;gap:12px;position:sticky;top:12px}
+.vimgs figure{margin:0;display:grid;gap:6px}
+.vimgs figcaption{font:500 .72rem/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.vimgs img{width:100%;max-height:440px;object-fit:contain;background:var(--paper);border-radius:8px;border:1px solid var(--line);cursor:zoom-in}
+.vimgs img.zoom{cursor:zoom-out}
+.form{display:grid;grid-template-columns:1fr 1fr;gap:14px 16px}
+.form .f{display:grid;gap:5px;min-width:0}
+.form .f.wide{grid-column:1/-1}
+.form label{font:500 .72rem/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);display:flex;gap:8px;align-items:center}
+.form label .empty{color:var(--warn);letter-spacing:0;text-transform:none;font-family:var(--body);font-size:.75rem}
+.form input,.form textarea{width:100%;border:1px solid var(--line);background:var(--paper);border-radius:8px;padding:9px 11px;font-size:.95rem}
+.form textarea{resize:vertical;min-height:62px}
+.form input:focus,.form textarea:focus{border-color:var(--accent);outline:none;box-shadow:0 0 0 3px var(--accent-soft)}
+.raw summary{cursor:pointer;color:var(--muted);font-size:.88rem}
+.raw pre{margin:10px 0 0;white-space:pre-wrap;font:.82rem/1.55 var(--mono);background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:12px;max-height:240px;overflow:auto}
+.vactions{display:flex;flex-wrap:wrap;gap:10px}
+
+/* ledger */
+.ledger{display:grid;gap:14px}
+.ledger-head{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:end;justify-content:space-between}
+.ledger-head h2{margin:0;font:700 1.35rem/1.2 var(--display)}
+.ledger-head p{margin:3px 0 0;color:var(--muted);font-size:.9rem}
+.ledger-actions{display:flex;flex-wrap:wrap;gap:8px}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font:.84rem/1.4 var(--mono);font-variant-numeric:tabular-nums}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top;white-space:nowrap;max-width:280px;overflow:hidden;text-overflow:ellipsis}
+td.wrap{white-space:normal;min-width:200px}
+th{font:500 .7rem/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);background:var(--paper);position:sticky;top:0}
+th.col-n,td.col-n{color:var(--muted);width:1%}
+tr:last-child td{border-bottom:0}
+tr.example td{color:var(--muted);font-style:italic}
+.chip{display:inline-block;font:500 .66rem/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;padding:3px 6px;border-radius:4px;background:var(--accent-soft);color:var(--accent);font-style:normal;margin-right:6px}
+.rowbtns{display:flex;gap:4px}
+.rowbtns button{border:1px solid var(--line);background:transparent;border-radius:6px;padding:3px 8px;cursor:pointer;font:.75rem var(--body);color:var(--muted)}
+.rowbtns button:hover{color:var(--ink);border-color:var(--muted)}
+.copybox{width:100%;min-height:120px;font:.8rem var(--mono);border:1px solid var(--line);border-radius:8px;background:var(--paper);padding:10px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--paper);padding:10px 18px;border-radius:999px;font-weight:500;font-size:.9rem;opacity:0;transition:.25s;pointer-events:none;z-index:20;max-width:calc(100vw - 32px);text-align:center}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+@media (max-width:860px){
+  .scan,.vgrid{grid-template-columns:minmax(0,1fr)}
+  .vimgs{position:static;grid-template-columns:1fr 1fr}
+}
+@media (max-width:520px){
+  .form{grid-template-columns:minmax(0,1fr)}
+  .vimgs{grid-template-columns:minmax(0,1fr)}
+  .side h2,.verify-head h2{font-size:1.35rem}
+}
+@media (prefers-reduced-motion:reduce){
+  .flip .card3d,.reading .bar.indef i{animation:none}
+  *{transition:none!important}
+}
+</style>
+</head>
+<body>
+
+
+<header class="top">
+  <div class="brand">
+    <svg width="30" height="22" viewBox="0 0 30 22" aria-hidden="true"><rect x="1" y="1" width="28" height="20" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="5" y="6" width="10" height="2.4" rx="1" fill="currentColor"/><rect x="5" y="11" width="16" height="1.8" rx=".9" fill="currentColor" opacity=".5"/><rect x="5" y="14.5" width="12" height="1.8" rx=".9" fill="currentColor" opacity=".5"/></svg>
+    Card Capture
+  </div>
+  <ol class="steps" id="steps" aria-label="Progress">
+    <li data-s="front"><b>1</b>Front</li>
+    <li data-s="back"><b>2</b>Back</li>
+    <li data-s="verify"><b>3</b>Verify</li>
+    <li data-s="table"><b>4</b>Copy to Excel</li>
+  </ol>
+  <span class="engine" id="engine"><i></i><span id="engineTxt">Starting…</span></span>
+</header>
+
+<main class="wrap">
+  <section class="scan" id="scanSec" aria-label="Scanner">
+    <div style="min-width:0">
+      <div class="stage drop" id="stage">
+        <video id="video" playsinline muted></video>
+        <img class="still" id="still" alt="" hidden>
+        <div class="guide" id="guide" hidden><span class="c c1"></span><span class="c c2"></span><span class="c c3"></span><span class="c c4"></span><span class="dim" id="guideDim">FIT CARD INSIDE · 90 × 55 MM</span></div>
+        <div class="cue" id="cue" hidden><span id="cueTxt">Hold the front of the card inside the frame</span></div>
+        <div class="flash" id="flash"></div>
+        <div class="flip" id="flip" hidden><div><div class="card3d"></div><strong>Flip the card over</strong><p style="margin:6px 0 0;opacity:.8">Front saved. Now show the back.</p></div></div>
+        <div class="reading" id="reading" hidden><div><strong style="font:700 1.2rem var(--display)">Reading the card…</strong><p id="readingTxt" style="margin:4px 0 0;opacity:.8;font-size:.9rem">This takes a few seconds.</p><div class="bar" id="bar"><i></i></div></div></div>
+        <div class="camoff" id="camoff" hidden>
+          <div class="box">
+            <svg width="44" height="36" viewBox="0 0 44 36" aria-hidden="true"><rect x="2" y="8" width="40" height="26" rx="5" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M14 8l3-5h10l3 5" fill="none" stroke="currentColor" stroke-width="2.2"/><circle cx="22" cy="21" r="7" fill="none" stroke="currentColor" stroke-width="2.2"/></svg>
+            <h3 id="camoffTitle">Camera not available</h3>
+            <p id="camoffMsg">Upload or drop a photo of the card instead.</p>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
+              <button class="btn light" id="uploadBtn2" type="button">Upload photo</button>
+              <button class="btn ghost" id="retryCam" type="button" style="color:#fff;border-color:rgba(255,255,255,.4)">Try camera again</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="controls">
+        <button class="btn primary big" id="captureBtn" type="button">Capture front <kbd>Space</kbd></button>
+        <button class="btn" id="skipBack" type="button" hidden>No back side</button>
+        <button class="btn" id="uploadBtn" type="button">Upload photo</button>
+        <input type="file" id="fileIn" accept="image/*" hidden>
+        <span class="spacer"></span>
+        <div class="orient" id="orient" role="group" aria-label="Card orientation">
+          <button type="button" data-o="landscape" aria-pressed="true"><svg width="18" height="12" viewBox="0 0 18 12" aria-hidden="true"><rect x="1" y="1" width="16" height="10" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>Landscape</button>
+          <button type="button" data-o="portrait" aria-pressed="false"><svg width="12" height="18" viewBox="0 0 12 18" aria-hidden="true"><rect x="1" y="1" width="10" height="16" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>Portrait</button>
+        </div>
+        <select id="camSel" aria-label="Camera" hidden></select>
+      </div>
+    </div>
+
+    <aside class="side">
+      <div style="display:grid;gap:8px">
+        <span class="eyebrow" id="sideEyebrow">Step 1 of 4</span>
+        <h2 id="sideTitle">Scan the front of the card</h2>
+        <p id="sideHelp">Hold the card flat, about 15 to 20 cm from the webcam, so it fills the frame. Avoid glare from overhead lights.</p>
+      </div>
+      <div class="thumbs">
+        <div class="slot"><div class="lbl">Front <button type="button" id="redoFront" hidden>Retake</button></div><div class="ph" id="thFront">Not captured</div></div>
+        <div class="slot"><div class="lbl">Back <button type="button" id="redoBack" hidden>Retake</button></div><div class="ph" id="thBack">Not captured</div></div>
+      </div>
+      <div class="field-row" id="langRow" hidden>
+        <label for="lang">Card language</label>
+        <select id="lang">
+          <option value="eng">English</option>
+          <option value="eng+chi_sim">English + Chinese (Simplified)</option>
+          <option value="eng+chi_tra">English + Chinese (Traditional)</option>
+          <option value="eng+jpn">English + Japanese</option>
+          <option value="eng+kor">English + Korean</option>
+          <option value="eng+hin">English + Hindi</option>
+        </select>
+      </div>
+      <p class="note" id="sideNote">Text is read with Claude's vision model, which handles mixed languages and unusual layouts.</p>
+    </aside>
+  </section>
+
+  <section class="verify" id="verifySec" hidden aria-label="Verify">
+    <div class="verify-head">
+      <div>
+        <span class="eyebrow">Step 3 of 4</span>
+        <h2 id="verifyTitle">Check what was captured</h2>
+        <p id="verifyHelp">Compare each field with the card photos and fix anything that was misread. Empty fields are flagged.</p>
+      </div>
+      <div class="vactions">
+        <button class="btn ghost" id="rescan" type="button">Discard and rescan</button>
+        <button class="btn primary big" id="confirm" type="button">Confirm and add to table</button>
+      </div>
+    </div>
+    <div class="vgrid">
+      <div class="vimgs" id="vimgs"></div>
+      <div style="display:grid;gap:16px;min-width:0">
+        <form class="form" id="form" autocomplete="off"></form>
+        <details class="raw" id="rawBox"><summary>Show all text read from the card</summary><pre id="raw"></pre></details>
+      </div>
+    </div>
+  </section>
+
+  <section class="ledger" id="ledger" aria-label="Scanned cards">
+    <div class="ledger-head">
+      <div>
+        <h2>Scanned cards <span id="count" style="color:var(--muted);font-weight:500"></span></h2>
+        <p>Copy and paste into Excel at cell A1 (with headers) or below your last row (rows only). Columns split automatically.</p>
+      </div>
+      <div class="ledger-actions">
+        <button class="btn primary" id="copyAll" type="button">Copy with headers</button>
+        <button class="btn" id="copyRows" type="button">Copy rows only</button>
+        <button class="btn" id="csvBtn" type="button">Download .csv</button>
+        <button class="btn ghost" id="clearAll" type="button">Clear</button>
+      </div>
+    </div>
+    <div class="tablewrap"><table id="table"><thead></thead><tbody></tbody></table></div>
+    <div id="fallbackCopy" hidden style="display:grid;gap:6px">
+      <p class="note warn" style="margin:0">Your browser blocked automatic copying. The text below is selected: press Ctrl+C (or ⌘C) to copy it.</p>
+      <textarea class="copybox" id="copyBox" readonly></textarea>
+    </div>
+  </section>
+</main>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+const $ = id => document.getElementById(id);
+const FIELDS = [
+  ['name','Name'],['title','Title'],['company','Company'],['email','Email'],
+  ['mobile','Mobile'],['office','Office phone'],['website','Website'],['linkedin','LinkedIn'],
+  ['address','Address'],['notes','Notes']
+];
+const COLS = [...FIELDS, ['scanned','Date scanned']];
+const CARD_AR = 1.65; // 90 x 55 mm, close to 3.5 x 2 in
+let orient='landscape';
+try{ if(localStorage.getItem('cardcapture.orient')==='portrait') orient='portrait'; }catch{}
+const cardAR=()=>orient==='portrait'?1/CARD_AR:CARD_AR;
+const STORE = 'cardcapture.rows.v1';
+const EXAMPLE = {name:'Priya Raman',title:'Director, Government Affairs',company:'Example Industries Pvt. Ltd.',email:'priya.raman@example.com',mobile:'+91 98100 00000',office:'+91 11 4000 0000',website:'www.example.com',linkedin:'',address:'4th Floor, Tower B, Sector 62, Noida 201309',notes:'Chinese: 拉曼',scanned:'2026-10-29'};
+
+const video=$('video'), stage=$('stage'), still=$('still');
+let stream=null, camOn=false, state='front', engine='manual', sampleFn=null, dlApi=null;
+let front=null, back=null; // {blob, url, ocrCanvas, textPromise}
+let rows=[]; let enginePromise=Promise.resolve(); let editingIdx=-1; let current=null; let abortCtl=null;
+
+// ---------- storage ----------
+try{ rows = JSON.parse(localStorage.getItem(STORE)||'[]'); if(!Array.isArray(rows)) rows=[]; }catch{ rows=[]; }
+const save = () => { try{ localStorage.setItem(STORE, JSON.stringify(rows)); }catch{} };
+
+// ---------- toast ----------
+let tt; function toast(msg){ const t=$('toast'); t.textContent=msg; t.classList.add('on'); clearTimeout(tt); tt=setTimeout(()=>t.classList.remove('on'),2400); }
+
+// ---------- steps ----------
+const STEP_ORDER=['front','back','verify','table'];
+function setSteps(s){
+  const i=STEP_ORDER.indexOf(s);
+  document.querySelectorAll('#steps li').forEach((li,k)=>{ li.classList.toggle('on',k===i); li.classList.toggle('done',k<i); });
+}
+
+function setState(s){
+  state=s;
+  const cap=$('captureBtn');
+  $('flip').hidden=true; $('reading').hidden = s!=='reading';
+  $('skipBack').hidden = s!=='back';
+  $('scanSec').hidden = s==='verify';
+  $('verifySec').hidden = s!=='verify';
+  if(s==='front'){
+    setSteps('front');
+    $('sideEyebrow').textContent='Step 1 of 4';
+    $('sideTitle').textContent='Scan the front of the card';
+    $('sideHelp').textContent= camOn ? 'Hold the card flat, about 15 to 20 cm from the webcam, so it fills the frame. For a tall card, switch to Portrait (or press R). Avoid glare from overhead lights.' : 'Upload or drop a clear, well-lit photo of the front of the card.';
+    cap.innerHTML = camOn ? 'Capture front <kbd>Space</kbd>' : 'Upload front';
+    $('cueTxt').textContent='Hold the front of the card inside the frame';
+    showLive();
+  } else if(s==='back'){
+    setSteps('back');
+    $('sideEyebrow').textContent='Step 2 of 4';
+    $('sideTitle').textContent='Now flip to the back';
+    $('sideHelp').textContent= camOn ? 'Turn the card over and hold the back inside the frame. If the back runs the other way, switch the orientation (or press R). If it is blank, choose "No back side".' : 'Upload a photo of the back. If the back is blank, choose "No back side".';
+    cap.innerHTML = camOn ? 'Capture back <kbd>Space</kbd>' : 'Upload back';
+    $('cueTxt').textContent='Hold the back of the card inside the frame';
+    showLive();
+  } else if(s==='reading'){
+    setSteps('verify');
+    $('sideEyebrow').textContent='Step 3 of 4';
+    $('sideTitle').textContent='Reading the card';
+    $('sideHelp').textContent='Pulling out the name, contact details and address.';
+    cap.disabled=true;
+  } else if(s==='verify'){
+    setSteps('verify');
+  }
+  if(s!=='reading') cap.disabled=false;
+  $('uploadBtn').hidden = !camOn || s==='reading';
+  $('orient').hidden = !camOn || s==='reading';
+}
+
+function showLive(){
+  still.hidden=true;
+  $('guide').hidden=!camOn; $('cue').hidden=!camOn; $('camoff').hidden=camOn;
+}
+
+// ---------- camera ----------
+function layoutGuide(){
+  const vw=video.videoWidth||1280, vh=video.videoHeight||720;
+  stage.style.setProperty('--ar', `${vw}/${vh}`);
+  const sar=vw/vh;
+  // guide box in fractions of the stage; its pixel aspect matches the card
+  const ar=cardAR();
+  let gw=0.88, gh=gw*sar/ar;
+  if(gh>0.86){ gh=0.86; gw=gh*ar/sar; }
+  $('guideDim').textContent = orient==='portrait' ? 'FIT CARD INSIDE · 55 × 90 MM' : 'FIT CARD INSIDE · 90 × 55 MM';
+  const g={x:(1-gw)/2,y:(1-gh)/2,w:gw,h:gh};
+  stage.style.setProperty('--gx',g.x*100+'%'); stage.style.setProperty('--gy',g.y*100+'%');
+  stage.style.setProperty('--gw',g.w*100+'%'); stage.style.setProperty('--gh',g.h*100+'%');
+  stage._guide=g;
+}
+function stopCamera(){ if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; } }
+async function startCamera(deviceId){
+  stopCamera();
+  try{
+    if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia) throw Object.assign(new Error('nosupport'),{name:'NotSupportedError'});
+    const v={width:{ideal:3840},height:{ideal:2160}};
+    if(deviceId) v.deviceId={exact:deviceId};
+    stream=await navigator.mediaDevices.getUserMedia({video:v,audio:false});
+    video.srcObject=stream;
+    await new Promise(r=>{ if(video.readyState>=1) r(); else video.onloadedmetadata=()=>r(); });
+    await video.play().catch(()=>{});
+    camOn=true; layoutGuide();
+    listCameras();
+  }catch(e){
+    camOn=false; stage.style.setProperty('--ar','16/9');
+    const framed = (()=>{ try{ return window.self!==window.top; }catch{ return true; } })();
+    let title='Camera not available', msg='Upload or drop a photo of the card instead.';
+    if(framed && window.claude){ title='The webcam is blocked inside Claude'; msg='Claude’s page viewer does not give pages camera access. Upload or drop photos of the card here, or open the hosted copy of this page to use your webcam.'; }
+    else if(e.name==='NotAllowedError'){ title='Camera access was blocked'; msg='Allow camera access for this site in your browser’s address bar or site settings, then choose "Try camera again". You can also upload a photo.'; }
+    else if(e.name==='NotFoundError'||e.name==='OverconstrainedError'){ title='No webcam found'; msg='Connect a camera or upload a photo of the card.'; }
+    else if(e.name==='NotReadableError'){ title='The webcam is in use'; msg='Close other apps using the camera (Zoom, Teams, Meet), then try again.'; }
+    else if(!window.isSecureContext){ title='Camera needs HTTPS'; msg='Browsers only allow webcam access on https:// pages. Host this file on an HTTPS site, or upload a photo.'; }
+    $('camoffTitle').textContent=title; $('camoffMsg').textContent=msg;
+  }
+  setState(state==='back'?'back':'front');
+}
+async function listCameras(){
+  try{
+    const devs=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='videoinput');
+    const sel=$('camSel'); sel.hidden=devs.length<2;
+    const cur=stream?.getVideoTracks()[0]?.getSettings().deviceId;
+    sel.innerHTML=devs.map((d,i)=>`<option value="${d.deviceId}" ${d.deviceId===cur?'selected':''}>${esc(d.label||'Camera '+(i+1))}</option>`).join('');
+  }catch{}
+}
+$('camSel').onchange=e=>startCamera(e.target.value);
+$('retryCam').onclick=()=>startCamera();
+window.addEventListener('resize',()=>{ if(camOn) layoutGuide(); });
+
+// ---------- capture ----------
+function canvasToBlob(c,q=.9){ return new Promise(r=>c.toBlob(b=>r(b),'image/jpeg',q)); }
+function scaleCanvas(src,maxL){
+  const s=Math.min(1,maxL/Math.max(src.width,src.height)); if(s===1) return src;
+  const c=document.createElement('canvas'); c.width=Math.round(src.width*s); c.height=Math.round(src.height*s);
+  c.getContext('2d').drawImage(src,0,0,c.width,c.height); return c;
+}
+function grabFrame(){
+  const vw=video.videoWidth, vh=video.videoHeight, g=stage._guide;
+  const m=0.04; // small margin around the guide
+  const x=Math.max(0,(g.x-m*g.w)*vw), y=Math.max(0,(g.y-m*g.h)*vh);
+  const w=Math.min(vw-x,g.w*(1+2*m)*vw), h=Math.min(vh-y,g.h*(1+2*m)*vh);
+  const c=document.createElement('canvas'); c.width=Math.round(w); c.height=Math.round(h);
+  c.getContext('2d').drawImage(video,x,y,w,h,0,0,c.width,c.height);
+  return c;
+}
+function sharpness(c){
+  // variance of the Laplacian on a small grey copy: higher means less blur
+  const W=360, H=Math.max(1,Math.round(c.height*W/c.width));
+  const t=document.createElement('canvas'); t.width=W; t.height=H;
+  const ctx=t.getContext('2d'); ctx.drawImage(c,0,0,W,H);
+  const p=ctx.getImageData(0,0,W,H).data, g=new Float32Array(W*H);
+  for(let i=0;i<W*H;i++) g[i]=p[i*4]*.299+p[i*4+1]*.587+p[i*4+2]*.114;
+  let sum=0,sq=0,n=0;
+  for(let y=1;y<H-1;y++) for(let x=1;x<W-1;x++){ const i=y*W+x; const l=4*g[i]-g[i-1]-g[i+1]-g[i-W]-g[i+W]; sum+=l; sq+=l*l; n++; }
+  return n? sq/n-(sum/n)**2 : 0;
+}
+async function grabBest(){
+  // short burst, keep the sharpest frame (beats hand shake and autofocus hunting)
+  let best=null,bestS=-1;
+  for(let k=0;k<5;k++){
+    const c=grabFrame(); const sc=sharpness(c);
+    if(sc>bestS){ bestS=sc; best=c; }
+    await new Promise(r=>setTimeout(r,90));
+  }
+  return best;
+}
+function boxBlur(src,W,H,r){
+  // mean filter using an integral image
+  const I=new Float64Array((W+1)*(H+1));
+  for(let y=0;y<H;y++){ let row=0; for(let x=0;x<W;x++){ row+=src[y*W+x]; I[(y+1)*(W+1)+x+1]=I[y*(W+1)+x+1]+row; } }
+  const out=new Float32Array(W*H);
+  for(let y=0;y<H;y++){ const y0=Math.max(0,y-r), y1=Math.min(H,y+r+1);
+    for(let x=0;x<W;x++){ const x0=Math.max(0,x-r), x1=Math.min(W,x+r+1);
+      out[y*W+x]=(I[y1*(W+1)+x1]-I[y0*(W+1)+x1]-I[y1*(W+1)+x0]+I[y0*(W+1)+x0])/((y1-y0)*(x1-x0)); } }
+  return out;
+}
+function prepGray(g,W,H,sharpen){
+  const L=Math.max(W,H);
+  if(sharpen){ const b=boxBlur(g,W,H,Math.max(2,Math.round(L/480))); for(let i=0;i<g.length;i++) g[i]=1.6*g[i]-0.6*b[i]; }
+  const bg=boxBlur(g,W,H,Math.round(L/60));
+  // dark panels (white text on a coloured band) are inverted first, so all text ends up dark on white
+  const hist=new Uint32Array(256);
+  for(let i=0;i<g.length;i++){
+    const b=bg[i], inv=b<120;
+    const v=Math.max(0,Math.min(255, inv ? (255-g[i])/Math.max(255-b,1)*235 : g[i]/Math.max(b,1)*235 ));
+    g[i]=v; hist[v|0]++;
+  }
+  const pct=q=>{ let acc=0; for(let v=0;v<256;v++){ acc+=hist[v]; if(acc>=g.length*q) return v; } return 255; };
+  const lo=pct(.01), hi=Math.max(lo+1,pct(sharpen?.5:.6));
+  for(let i=0;i<g.length;i++) g[i]=Math.max(0,Math.min(255,(g[i]-lo)*255/(hi-lo)));
+  return g;
+}
+function ocrPrep(src,sharpen){
+  // upscale so small webcam text is big enough, flatten uneven lighting, stretch so grey ink turns black
+  const long=Math.max(src.width,src.height);
+  const Lt=Math.min(3000,Math.max(2400,long)); const s=Math.min(4,Lt/long);
+  const W=Math.round(src.width*s), H=Math.round(src.height*s);
+  const c=document.createElement('canvas'); c.width=W; c.height=H;
+  const ctx=c.getContext('2d'); ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high'; ctx.drawImage(src,0,0,W,H);
+  const d=ctx.getImageData(0,0,W,H), p=d.data; const g=new Float32Array(W*H);
+  for(let i=0;i<W*H;i++) g[i]=p[i*4]*.299+p[i*4+1]*.587+p[i*4+2]*.114;
+  prepGray(g,W,H,sharpen);
+  for(let i=0;i<g.length;i++){ p[i*4]=p[i*4+1]=p[i*4+2]=g[i]; p[i*4+3]=255; }
+  ctx.putImageData(d,0,0); return c;
+}
+async function makeSide(canvas){
+  const big=scaleCanvas(canvas,1800);
+  const blob=await canvasToBlob(big,.9);
+  const side={blob,url:URL.createObjectURL(blob),canvas:scaleCanvas(canvas,3000),textPromise:null};
+  if(engine==='tesseract') ocrSide(side);
+  return side;
+}
+function flash(){ const f=$('flash'); f.classList.add('go'); requestAnimationFrame(()=>requestAnimationFrame(()=>f.classList.remove('go'))); }
+
+async function takeSide(canvas){
+  const side=await makeSide(canvas);
+  if(state==='front'){
+    if(front) URL.revokeObjectURL(front.url);
+    front=side; setThumb('front',side);
+    if(back){ toReading(); return; } // retake of front only
+    setState('back');
+    if(camOn){ $('flip').hidden=false; setTimeout(()=>{ if(state==='back') $('flip').hidden=true; },1800); }
+  } else if(state==='back'){
+    if(back) URL.revokeObjectURL(back.url);
+    back=side; setThumb('back',side); toReading();
+  }
+}
+function setThumb(which,side){
+  const el=$(which==='front'?'thFront':'thBack');
+  const btn=$(which==='front'?'redoFront':'redoBack');
+  if(side==='none'){ el.innerHTML='No back side'; el.classList.remove('filled'); btn.hidden=false; return; }
+  if(!side){ el.innerHTML='Not captured'; el.classList.remove('filled'); btn.hidden=true; return; }
+  el.innerHTML=`<img src="${side.url}" alt="${which} of card">`; el.classList.add('filled'); btn.hidden=false;
+}
+$('captureBtn').onclick=()=>{
+  if(state!=='front'&&state!=='back') return;
+  if(!camOn){ $('fileIn').click(); return; }
+  if(!video.videoWidth) return;
+  flash(); $('captureBtn').disabled=true;
+  grabBest().then(c=>takeSide(c)).finally(()=>{ if(state==='front'||state==='back') $('captureBtn').disabled=false; });
+};
+$('skipBack').onclick=()=>{ back='none'; setThumb('back','none'); toReading(); };
+$('redoFront').onclick=()=>{ if(abortCtl) abortCtl.abort(); front=null; setThumb('front',null); setState('front'); };
+$('redoBack').onclick=()=>{ if(abortCtl) abortCtl.abort(); if(back&&back!=='none') URL.revokeObjectURL(back.url); back=null; setThumb('back',null); if(!front){setState('front');} else setState('back'); };
+document.addEventListener('keydown',e=>{
+  if((e.code==='Space'||e.key===' ')&&!/INPUT|TEXTAREA|SELECT|BUTTON/.test(document.activeElement?.tagName||'')&&(state==='front'||state==='back')&&camOn){ e.preventDefault(); $('captureBtn').click(); }
+});
+
+// uploads, drag-and-drop, paste
+[$('uploadBtn'),$('uploadBtn2')].forEach(b=>b.onclick=()=>$('fileIn').click());
+$('fileIn').onchange=e=>{ const f=e.target.files[0]; e.target.value=''; if(f) loadFile(f); };
+async function loadFile(f){
+  if(!(state==='front'||state==='back')) return;
+  if(!/^image\//.test(f.type)){ toast('That file is not an image.'); return; }
+  try{
+    const bmp=await createImageBitmap(f);
+    const c=document.createElement('canvas'); c.width=bmp.width; c.height=bmp.height; c.getContext('2d').drawImage(bmp,0,0);
+    await takeSide(c);
+  }catch{ toast('Could not open that image. Try a JPG or PNG.'); }
+}
+stage.addEventListener('dragover',e=>{e.preventDefault(); stage.classList.add('over');});
+stage.addEventListener('dragleave',()=>stage.classList.remove('over'));
+stage.addEventListener('drop',e=>{e.preventDefault(); stage.classList.remove('over'); const f=e.dataTransfer.files[0]; if(f) loadFile(f);});
+document.addEventListener('paste',e=>{ const it=[...(e.clipboardData?.items||[])].find(i=>i.type.startsWith('image/')); if(it) loadFile(it.getAsFile()); });
+
+// ---------- OCR engines ----------
+let tessLoad=null; const workers={};
+function loadTesseract(){
+  if(window.Tesseract) return Promise.resolve();
+  if(!tessLoad) tessLoad=new Promise((res,rej)=>{ const s=document.createElement('script'); s.src='https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js'; s.onload=res; s.onerror=()=>{tessLoad=null; rej(new Error('load'));}; document.head.appendChild(s); });
+  return tessLoad;
+}
+let progressCb=null;
+function getWorker(lang){
+  if(!workers[lang]) workers[lang]=(async()=>{
+    await loadTesseract();
+    const w=await Tesseract.createWorker(lang,1,{logger:m=>{ if(progressCb&&m.status==='recognizing text') progressCb(m.progress); }});
+    return w;
+  })().catch(e=>{ delete workers[lang]; throw e; });
+  return workers[lang];
+}
+let passesDone=0, passesTotal=1;
+async function runTesseract(canvas,psm){
+  const w=await getWorker($('lang').value);
+  await w.setParameters({tessedit_pageseg_mode:psm, preserve_interword_spaces:'1'});
+  const {data}=await w.recognize(canvas);
+  passesDone++;
+  return {text:data.text||'', conf:data.confidence||0};
+}
+async function ocrTwoPass(canvas){
+  // pass A: flattened image, automatic layout. pass B: sharpened, single-column layout.
+  const a=await runTesseract(ocrPrep(canvas,false),'3');
+  const b=await runTesseract(ocrPrep(canvas,true),'4');
+  return [a,b];
+}
+
+function ocrSide(side){ if(side&&side!=='none'&&!side.textPromise) side.textPromise=ocrTwoPass(side.canvas).catch(()=>[{text:'',conf:0},{text:'',conf:0}]); }
+async function toReading(){
+  setState('reading');
+  $('readingTxt').textContent='Getting the text reader ready.';
+  await enginePromise;
+  if(state!=='reading') return;
+  still.src=(back&&back!=='none'?back:front).url; still.hidden=false;
+  $('guide').hidden=true; $('cue').hidden=true; $('camoff').hidden=true;
+  const bar=$('bar'); bar.classList.add('indef'); bar.style.removeProperty('--p');
+  let result=null, raw='', note='';
+  try{
+    if(engine==='claude'){
+      $('readingTxt').textContent='Claude is reading the card. Usually 10 to 30 seconds.';
+      result=await readWithClaude(); raw=result.raw_text||'';
+    } else if(engine==='tesseract'){
+      $('readingTxt').textContent='Running text recognition in your browser.';
+      bar.classList.remove('indef');
+      const hasBack=back&&back!=='none';
+      passesTotal=hasBack?4:2; passesDone=0;
+      progressCb=p=>bar.style.setProperty('--p',Math.round(6+Math.min(1,(passesDone+p)/passesTotal)*94)+'%');
+      ocrSide(front); ocrSide(back);
+      const F=await front.textPromise; const B=hasBack?await back.textPromise:[{text:'',conf:0},{text:'',conf:0}];
+      progressCb=null;
+      const runs=[0,1].map(k=>({res:parseCard(F[k].text,B[k].text),conf:(F[k].conf+(hasBack?B[k].conf:F[k].conf))/2,raw:F[k].text.trim()+(hasBack&&B[k].text.trim()?'\n\n--- back ---\n'+B[k].text.trim():'')}));
+      result=mergeRuns(runs);
+      const bestRun=runs[0].conf>=runs[1].conf?runs[0]:runs[1];
+      raw=bestRun.raw.replace(/\n{2,}/g,'\n');
+      if(!raw.trim()) note='No text was recognized. Try a sharper, brighter photo, or type the details below.';
+    } else {
+      result={}; note='Automatic text reading is not available here. Type the details from the card below.';
+    }
+  }catch(e){
+    progressCb=null;
+    if(e&&e.code==='cancelled') return;
+    result={};
+    note = e&&e.code ? claudeErr(e.code) : 'Text reading failed. Type the details from the card below, or rescan.';
+  }
+  if(state!=='reading') return;
+  current={data:normalize(result),raw,front,back};
+  openVerify(current, note);
+}
+function claudeErr(code){
+  return ({not_granted:'Claude was not allowed to read the card. Type the details below, or rescan and allow it when asked.',
+    rate_limited:'Too many requests just now. Wait a minute and rescan, or type the details below.',
+    invalid_json:'Claude’s reply could not be read. Rescan, or type the details below.',
+    image_rejected:'The photo could not be sent. Try a smaller or clearer image.',
+    images_unavailable:'Image reading is not available in this view. Type the details below.'})[code] || 'Text reading failed. Type the details below, or rescan.';
+}
+async function readWithClaude(){
+  abortCtl=new AbortController();
+  const imgs=[front.blob]; if(back&&back!=='none') imgs.push(back.blob);
+  const prompt=`These are photos of one business card. Image 1 is the front${imgs.length>1?', image 2 is the back':''}. Read all printed text carefully and extract the contact details.
+
+Reply with only a JSON object with exactly these string keys:
+{"name":"","title":"","company":"","email":"","mobile":"","office":"","website":"","linkedin":"","address":"","notes":"","raw_text":""}
+
+Rules:
+- Use "" for anything not printed on the card. Never guess or invent.
+- mobile: mobile or cell number. office: office, direct, board or landline number. Keep country codes and spacing as printed.
+- If there are several emails or phone numbers, put the main one in its field and the others in notes with a label (e.g. "Fax: ...", "Alt email: ...").
+- website: the company URL as printed. linkedin: a LinkedIn URL or handle if printed.
+- address: the full postal address on one line, parts separated by commas.
+- If details repeat in another language or script (for example Chinese on the back), keep the English version in the main fields and put the other-language name, title and company in notes, e.g. "Chinese: 王伟 / 销售总监 / 某某有限公司".
+- notes: fax, extra numbers or emails, social handles, WeChat ID, other-language details. Skip slogans and service lists.
+- raw_text: every line of text you can read, front then back, separated by \\n.`;
+  return await sampleFn.json(prompt,{images:imgs,modelTier:'default',signal:abortCtl.signal});
+}
+
+// ---------- heuristic parser (Tesseract path) ----------
+const RE = {
+  email:/[A-Z0-9._%+-]+@[A-Z0-9-]+(?:\.[A-Z0-9-]+)*\.[A-Z]{2,}/gi,
+  linkedin:/(?:https?:\/\/)?(?:[a-z]{2,3}\.)?linkedin\.com\/[^\s,;]+/gi,
+  web:/(?:https?:\/\/[^\s,;]+|www\.[^\s,;]+|\b[a-z0-9-]+(?:\.[a-z0-9-]+)*\.(?:com|in|org|net|co|io|ai|edu|gov|biz|info|cn|sg|jp|hk|tw|uk|de|fr|au|ae|asia)(?:\.[a-z]{2})?\b(?:\/[^\s,;]*)?)/gi,
+  phone:/(?:\(?(?:\+|00)\d{1,3}\)?[\s.-]*)?\d[\d\s().\/lI|-]{6,}[\dlI)]/g,
+  title:/\b(chief|ceo|cfo|coo|cto|cio|cmo|founder|co-founder|president|vice|vp|avp|svp|evp|director|manager|head|lead|officer|partner|principal|associate|analyst|consultant|engineer|executive|specialist|adviser|advisor|counsel|attorney|advocate|professor|lecturer|researcher|fellow|coordinator|representative|secretary|chairman|chairperson|owner|proprietor|md|gm|agm|dgm|intern|architect|designer|developer|scientist|editor|correspondent|ambassador|minister|counsellor|counselor|attach[eé]|strategist|controller|accountant|banker|trader|supervisor)\b/i,
+  company:/\b(ltd|limited|inc|incorporated|llc|llp|plc|pvt|private|corp|corporation|co\.|company|group|gmbh|ag|s\.a\.|sa|bv|technologies|technology|solutions|industries|associates|partners|consulting|consultants|holdings|ventures|capital|bank|university|institute|foundation|enterprises|international|global|systems|labs|laboratories|pte|kk|有限公司|公司|集团)\b/i,
+  addr:/\b(road|rd\.?|street|st\.|floor|flr|tower|sector|nagar|marg|suite|ste|ave|avenue|building|bldg|plot|block|lane|phase|park|centre|center|chowk|vihar|enclave|colony|district|highway|blvd|boulevard|plaza|square|level|unit|po box|p\.o\.)\b|\b\d{6}\b|\b[A-Z]{2}\s\d{5}\b|\b\d{3}\s?\d{3}\b,?\s*india|\bindia\b|路|街|号|大厦|楼/i,
+  label:/\b(e-?mail|email|mail|tel|telephone|phone|ph|mob|mobile|cell|direct|board|office|off|fax|web|website|url|w|m|t|o|d|f|e|p)\b\s*[:.]?/gi
+};
+const FREEMAIL=/^(gmail|yahoo|hotmail|outlook|live|icloud|rediffmail|protonmail|163|qq|126|aol)\./i;
+function parseCard(frontText, backText){
+  const out=Object.fromEntries(FIELDS.map(([k])=>[k,'']));
+  const notes=[];
+  const clean=t=>t.split(/\r?\n/).map(l=>l.replace(/[|_~`«»©®™•“”‘’]+/g,' ').replace(/[—–]{2,}|-{3,}/g,' ').replace(/\.{2,}/g,'.').replace(/\bW{3,}\./gi,'www.').replace(/\bwww[\s.,]+([a-z0-9-]{2,})[\s.,]+(com|in|org|net|co|io|ai)\b/gi,'www.$1.$2').replace(/@([a-z0-9-]{2,})[\s,]+(com|in|org|net|co|io|ai)\b/gi,'@$1.$2').replace(/\s{2,}/g,' ').trim()).filter(l=>l.length>1&&/[A-Za-z0-9぀-鿿ऀ-ॿ가-힯]/.test(l));
+  const trimJunk=l=>l.replace(/^(?:[^A-Za-z0-9(+\u3400-\u9fff]+|[A-Za-z0-9]{1,2}\s+(?=[^\s]*[A-Za-z]{3}))+/,'').replace(/(?:\s+[^A-Za-z0-9\s)]{1,3}|\s+[a-z]{1,2})+$/,'').trim();
+  const fl=clean(frontText).map(trimJunk).filter(l=>l.length>1), bl=clean(backText).map(trimJunk).filter(l=>l.length>1);
+  const lines=[...fl,...bl]; const used=new Set();
+  const residue=(l,matches)=>{ let r=l; matches.forEach(m=>r=r.replace(m,' ')); return r.replace(RE.label,' ').replace(/[^A-Za-z0-9぀-鿿ऀ-ॿ가-힯]+/g,' ').trim(); };
+  const pull=(re,cb)=>lines.forEach((l,i)=>{ if(used.has(i)) return; const m=l.match(re); if(!m) return; m.forEach(x=>cb(x,l,i)); const r=residue(l,m); if(r.length<3) used.add(i); else lines[i]=l.replace(new RegExp(m.map(x=>x.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|'),'g'),' ').replace(/\s{2,}/g,' ').trim(); });
+
+  // fix spaced emails before matching
+  for(let i=0;i<lines.length;i++) lines[i]=lines[i].replace(/\s*@\s*/g,'@').replace(/(@[\w-]+)\s*\.\s*/g,'$1.');
+  const emails=[]; pull(RE.email,x=>{ if(!emails.includes(x.toLowerCase())) emails.push(x.toLowerCase()); });
+  out.email=emails[0]||''; emails.slice(1).forEach(e=>notes.push('Alt email: '+e));
+  pull(RE.linkedin,x=>{ if(!out.linkedin) out.linkedin=x; });
+  const webs=[]; pull(RE.web,x=>{ x=x.replace(/[.)]+$/,''); if(!/@/.test(x)&&!webs.includes(x.toLowerCase())) webs.push(x.toLowerCase()); });
+  out.website=webs.find(w=>!/linkedin/.test(w))||'';
+
+  const mob=[], off=[], free=[];
+  lines.forEach((l,i)=>{
+    if(used.has(i)) return;
+    const ms=[...l.matchAll(RE.phone)].filter(m=>{ const d=m[0].replace(/\D/g,''); return d.length>=8&&d.length<=15; });
+    if(!ms.length) return;
+    ms.forEach(m=>{
+      const before=l.slice(Math.max(0,m.index-14),m.index).toLowerCase();
+      const num=m[0].replace(/^\(?\s*(\+|00)(\d{1,3})\s*\)\s*/,'+$2 ').replace(/(\d)[)lI|](?=\s?\d)/g,'$11').replace(/(\d)[)lI|]$/,'$11').replace(/(\d)[Oo](?=\d)/g,'$10').replace(/[^\d+()\- ]/g,'').replace(/\(\s*$/,'').replace(/\s{2,}/g,' ').trim();
+      if(/fax|\bf\b/.test(before)) notes.push('Fax: '+num);
+      else if(/mob|cell|whats|\bm\b|\bh\/?p\b/.test(before)) mob.push(num);
+      else if(RE.addr.test(l)&&!/\+/.test(m[0])&&!/[@|]/.test(l)&&!/tel|ph/.test(before)) return;
+      else if(/tel|ph|off|direct|board|land|\bt\b|\bo\b|\bd\b|\bp\b/.test(before)) off.push(num);
+      else free.push(num);
+    });
+    const r=residue(l,ms.map(m=>m[0])); if(r.length<3) used.add(i);
+  });
+  free.forEach(n=>{ const d=n.replace(/\D/g,'').replace(/^(0091|91|0)/,''); (d.length===10&&/^[6-9]/.test(d)?mob:off).push(n); });
+  out.mobile=mob[0]||''; out.office=off[0]||'';
+  mob.slice(1).forEach(n=>notes.push('Alt mobile: '+n)); off.slice(1).forEach(n=>notes.push('Alt phone: '+n));
+
+  // address: lines matching address cues, joined when adjacent
+  const addrIdx=[]; lines.forEach((l,i)=>{ if(!used.has(i)&&RE.addr.test(l)&&!RE.title.test(l)&&!/@|\d{8,}|\d{4}\s\d{5,}/.test(l)) addrIdx.push(i); });
+  if(addrIdx.length){
+    const start=addrIdx[0]; const block=[start];
+    for(let k=1;k<addrIdx.length;k++){ if(addrIdx[k]-block[block.length-1]<=2) block.push(addrIdx[k]); else break; }
+    const from=block[0], to=block[block.length-1];
+    const parts=[]; for(let i=from;i<=to;i++){ if(!used.has(i)){ parts.push(lines[i].replace(/^(address|add|addr)\s*[:.]?\s*/i,'')); used.add(i);} }
+    out.address=parts.join(', ').replace(/,\s*,/g,',');
+  }
+  // title
+  let titleIdx=-1;
+  lines.forEach((l,i)=>{ if(titleIdx<0&&!used.has(i)&&RE.title.test(l)&&l.length<70&&!RE.company.test(l)){ titleIdx=i; } });
+  if(titleIdx>=0){ out.title=lines[titleIdx]; used.add(titleIdx); }
+  // company
+  let compIdx=lines.findIndex((l,i)=>!used.has(i)&&RE.company.test(l)&&l.length<70);
+  if(compIdx>=0){
+    out.company=lines[compIdx]; used.add(compIdx);
+    // brand printed on the line above, e.g. "NORTHWIND" over "Logistics Pvt. Ltd."
+    const dom=((out.email.split('@')[1]||'')+' '+out.website).toLowerCase().replace(/[^a-z]/g,'');
+    const pi=compIdx-1, prev=pi>=0&&!used.has(pi)?lines[pi]:'';
+    const key=prev.toLowerCase().replace(/[^a-z]/g,'');
+    if(key.length>=3&&dom.includes(key)&&!out.company.toLowerCase().replace(/[^a-z]/g,'').includes(key)){ out.company=prev+' '+out.company; used.add(pi); }
+  }
+  else if(out.email){ const dom=out.email.split('@')[1]; if(dom&&!FREEMAIL.test(dom)){ const base=dom.split('.')[0]; out.company=base.charAt(0).toUpperCase()+base.slice(1); } }
+  // name
+  let best=-1,bestScore=-99,bestName='';
+  const nameOf=l=>l.replace(/\((?:she|he|they|ze)[^)]*\)?/gi,' ').split(/\s+/).filter(w=>/^[A-Za-z][A-Za-z'\-.]*$/.test(w)&&!(w.length<=2&&w===w.toLowerCase())).join(' ');
+  lines.forEach((l,i)=>{
+    if(used.has(i)||/\d|@/.test(l)) return;
+    const cjk=/^[\u3400-\u9fff]{2,4}$/.test(l.replace(/\s/g,''));
+    const nm=cjk?l:nameOf(l); const words=nm.split(/\s+/).filter(Boolean);
+    const near=titleIdx>=0&&Math.abs(i-titleIdx)<=1;
+    if(!cjk&&(words.length<1||words.length>4||nm.length>40||nm.length<3)) return;
+    if(!cjk&&words.length===1&&!(near||/^[A-Z][a-z]{2,}$/.test(words[0]))) return;
+    let s=words.length===1&&!near?-2:0;
+    if(cjk) s+=1;
+    if(words.every(w=>/^[A-Z][a-z'\-]+\.?$|^[A-Z]{2,}$|^[A-Z]\.$/.test(w))) s+=4;
+    if(i<fl.length) s+=2; if(i<3) s+=2;
+    if(titleIdx>=0&&(i===titleIdx-1||i===titleIdx+1)) s+=4;
+    if(RE.company.test(l)||RE.title.test(l)) s-=6;
+    if(s>bestScore){ bestScore=s; best=i; bestName=nm; }
+  });
+  if(best>=0&&bestScore>=2){ out.name=bestName.replace(/\b([A-Z])([A-Z]+)\b/g,(m,a,b)=>a+b.toLowerCase()); used.add(best); }
+  // leftovers from the back go to notes (front leftovers are usually logos/taglines)
+  lines.forEach((l,i)=>{ if(used.has(i)||i<fl.length) return; const letters=(l.match(/[A-Za-z㐀-鿿]/g)||[]).length; if(letters>=3&&letters/l.length>.55) notes.push(l); });
+  out.notes=notes.join('; ').slice(0,300);
+  out.name=out.name.split(' ').map(w=>/^l[a-z]{2,}/.test(w)?'I'+w.slice(1):w).filter((w,k,a)=>!(k>0&&k===a.length-1&&/^[a-z]+$/.test(w))).join(' ');
+  out.title=fixWords(out.title,TITLE_WORDS).replace(/\b(ceo|cfo|coo|cto|cio|cmo|vp|avp|svp|evp|md|gm|agm|dgm|hr|it)\b/gi,m=>m.toUpperCase());
+  out.address=fixWords(out.address,CITY_WORDS);
+  return out;
+}
+const TITLE_WORDS=['Senior','Junior','Manager','Director','Analyst','Associate','Engineer','Consultant','Officer','Executive','President','Principal','Partner','Founder','Head','Lead','Specialist','Advisor','Adviser','Coordinator','Assistant','Deputy','General','Managing','Chief','Research','Business','Development','Marketing','Sales','Operations','Technology','Strategy','Policy','Public','Affairs','Government','Product','Finance','Programme','Program'];
+const CITY_WORDS=['Bengaluru','Bangalore','Mumbai','Delhi','Noida','Gurugram','Gurgaon','Hyderabad','Chennai','Kolkata','Pune','Ahmedabad','Jaipur','Lucknow','Chandigarh','Ghaziabad','Faridabad','Kochi','Thiruvananthapuram','Indore','Bhopal','Nagpur','Coimbatore','Singapore','Shanghai','Beijing','Shenzhen','Hong','Kong','Tokyo','London','Dubai','Karnataka','Maharashtra','Haryana','Telangana','Uttar','Pradesh','Tamil','Nadu','Kerala','Gujarat','India'];
+function fixWords(text,dict){
+  // swap a word for a known word one or two letters away (OCR slips like Semor -> Senior)
+  return String(text||'').replace(/[A-Za-z]{4,}/g,w=>{
+    let best=null,bd=9; for(const d of dict){ if(Math.abs(d.length-w.length)>1) continue; const e=editDist(w.toLowerCase(),d.toLowerCase()); if(e<bd){bd=e;best=d;} }
+    if(best&&bd>0&&bd<=(w.length>=5?2:1)) return w===w.toUpperCase()?best.toUpperCase():best;
+    return w;
+  });
+}
+function editDist(a,b){ const m=a.length,n=b.length; const d=Array.from({length:m+1},(_,i)=>[i]); for(let j=1;j<=n;j++)d[0][j]=j; for(let i=1;i<=m;i++)for(let j=1;j<=n;j++)d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a[i-1]===b[j-1]?0:1)); return d[m][n]; }
+function mergeRuns(runs){
+  // field by field: prefer the more confident pass, fall back to the other; reconcile email and web domains
+  const [A,B]=runs[0].conf>=runs[1].conf?runs:[runs[1],runs[0]];
+  const out={}; FIELDS.forEach(([k])=>{ out[k]=A.res[k]||B.res[k]||''; });
+  if(B.res.name&&out.name&&B.res.name.length>out.name.length&&B.res.name.startsWith(out.name)) out.name=B.res.name;
+  const doms=[]; runs.forEach(r=>{ const e=r.res.email.split('@')[1]; if(e) doms.push(e); const w=r.res.website.replace(/^https?:\/\//,'').replace(/^www\./,'').split('/')[0]; if(w) doms.push(w); });
+  const votes=d=>doms.filter(x=>x===d).length;
+  const fixDom=d=>{ let best=d; doms.forEach(x=>{ if(x!==d&&editDist(x,d)<=2&&(votes(x)>votes(best)||(votes(x)===votes(best)&&x.length>best.length))) best=x; }); return best; };
+  if(out.email){ const users=[A.res.email,B.res.email].filter(Boolean).map(e=>e.split('@')[0]); let u=users[0]; users.forEach(x=>{ if(x.length>u.length&&editDist(x,u)<=2) u=x; }); out.email=u+'@'+fixDom(out.email.split('@')[1]); }
+  const dg=x=>String(x||'').replace(/\D/g,'').slice(-10);
+  if(out.office&&dg(out.office)===dg(out.mobile)) out.office=(dg(A.res.office)!==dg(out.mobile)&&A.res.office)||(dg(B.res.office)!==dg(out.mobile)&&B.res.office)||'';
+  if(out.website){ const host=out.website.replace(/^https?:\/\//,'').replace(/^www\./,'').split('/')[0]; const f=fixDom(host); if(f!==host) out.website=out.website.replace(host,f); }
+  return out;
+}
+function normalize(o){ const r={}; FIELDS.forEach(([k])=>{ r[k]=String(o?.[k]??'').replace(/\s+\n/g,'\n').trim(); }); return r; }
+
+// ---------- verify ----------
+function openVerify(c, note, isEdit){
+  setState('verify');
+  $('verifyTitle').textContent = isEdit ? 'Edit card details' : 'Check what was captured';
+  $('confirm').textContent = isEdit ? 'Save changes' : 'Confirm and add to table';
+  $('rescan').textContent = isEdit ? 'Cancel' : 'Discard and rescan';
+  $('verifyHelp').textContent = note || (isEdit ? 'Change any field, then save.' : 'Compare each field with the card photos and fix anything that was misread. Empty fields are flagged.');
+  $('verifyHelp').style.color = note ? 'var(--warn)' : '';
+  const imgs=[]; if(c.front) imgs.push(['Front',c.front.url]); if(c.back&&c.back!=='none') imgs.push(['Back',c.back.url]);
+  $('vimgs').innerHTML=imgs.map(([l,u])=>`<figure><figcaption>${l}</figcaption><img src="${u}" alt="${l} of card"></figure>`).join('');
+  $('vimgs').hidden=!imgs.length;
+  $('vimgs').querySelectorAll('img').forEach(im=>im.onclick=()=>{ im.classList.toggle('zoom'); im.style.width=im.classList.contains('zoom')?'200%':''; im.parentElement.style.overflow='auto'; });
+  $('form').innerHTML=FIELDS.map(([k,l])=>{
+    const v=esc(c.data[k]||''); const wide=k==='address'||k==='notes';
+    const empty=!c.data[k]&&k!=='notes'&&k!=='linkedin'?'<span class="empty">· not found</span>':'';
+    const ctl= wide ? `<textarea id="f_${k}" rows="2">${v}</textarea>` : `<input id="f_${k}" value="${v}" ${k==='email'?'type="email" inputmode="email"':''}${k==='mobile'||k==='office'?'inputmode="tel"':''}>`;
+    return `<div class="f ${wide?'wide':''}"><label for="f_${k}">${l} ${empty}</label>${ctl}</div>`;
+  }).join('');
+  $('raw').textContent=c.raw||''; $('rawBox').hidden=!c.raw; $('rawBox').open=false;
+  $('verifySec').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});
+  setTimeout(()=>$('f_name')?.focus({preventScroll:true}),50);
+}
+function readForm(){ const o={}; FIELDS.forEach(([k])=>{ o[k]=($('f_'+k).value||'').trim(); }); return o; }
+$('form').addEventListener('submit',e=>e.preventDefault());
+$('form').addEventListener('keydown',e=>{ if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)) $('confirm').click(); });
+$('confirm').onclick=()=>{
+  const d=readForm();
+  if(!Object.values(d).some(Boolean)){ toast('All fields are empty. Fill in at least one.'); return; }
+  if(editingIdx>=0){ rows[editingIdx]={...rows[editingIdx],...d}; editingIdx=-1; toast('Changes saved'); }
+  else { d.scanned=today(); rows.push(d); toast('Added to table. Ready for the next card.'); }
+  save(); renderTable(); resetScan(); setSteps('table');
+  setTimeout(()=>{ if(state==='front') setSteps('front'); },2500);
+  if(!$('ledger').getBoundingClientRect || $('ledger').getBoundingClientRect().top>innerHeight) $('ledger').scrollIntoView({behavior:'smooth'});
+};
+$('rescan').onclick=()=>{ editingIdx=-1; resetScan(); window.scrollTo({top:0,behavior:'smooth'}); };
+function resetScan(){
+  if(abortCtl) abortCtl.abort(); abortCtl=null;
+  front=null; back=null; current=null; setThumb('front',null); setThumb('back',null);
+  setState('front');
+}
+function today(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+
+// ---------- table ----------
+function esc(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function renderTable(){
+  const t=$('table');
+  t.tHead.innerHTML='<tr><th class="col-n">#</th>'+COLS.map(([,l])=>`<th>${l}</th>`).join('')+'<th></th></tr>';
+  const list=rows.length?rows:[EXAMPLE];
+  t.tBodies[0].innerHTML=list.map((r,i)=>`<tr class="${rows.length?'':'example'}"><td class="col-n">${rows.length?i+1:'<span class="chip">Example</span>'}</td>`+COLS.map(([k])=>`<td class="${k==='address'||k==='notes'?'wrap':''}" title="${esc(r[k]||'')}">${esc(r[k]||'')}</td>`).join('')+`<td>${rows.length?`<div class="rowbtns"><button type="button" data-edit="${i}">Edit</button><button type="button" data-del="${i}">Delete</button></div>`:''}</td></tr>`).join('');
+  $('count').textContent=rows.length?`(${rows.length})`:'';
+  ['copyAll','copyRows','csvBtn','clearAll'].forEach(id=>$(id).disabled=!rows.length);
+}
+$('table').addEventListener('click',e=>{
+  const ed=e.target.closest('[data-edit]'), del=e.target.closest('[data-del]');
+  if(del){ const i=+del.dataset.del; const btn=del; if(btn.dataset.armed){ rows.splice(i,1); save(); renderTable(); toast('Card deleted'); } else { btn.dataset.armed='1'; btn.textContent='Confirm'; setTimeout(()=>{ if(btn.isConnected){ delete btn.dataset.armed; btn.textContent='Delete'; } },3000); } }
+  if(ed){ editingIdx=+ed.dataset.edit; openVerify({data:{...rows[editingIdx]},raw:'',front:null,back:null},'',true); }
+});
+const cellTSV=v=>String(v||'').replace(/[\t\r\n]+/g,'; ').trim();
+function toTSV(withHead){ const lines=rows.map(r=>COLS.map(([k])=>cellTSV(r[k])).join('\t')); if(withHead) lines.unshift(COLS.map(([,l])=>l).join('\t')); return lines.join('\r\n'); }
+const cellCSV=v=>{ v=String(v||''); return /[",\r\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; };
+function toCSV(){ return [COLS.map(([,l])=>l), ...rows.map(r=>COLS.map(([k])=>r[k]))].map(a=>a.map(cellCSV).join(',')).join('\r\n'); }
+async function copy(text,msg){
+  $('fallbackCopy').hidden=true;
+  try{ await navigator.clipboard.writeText(text); toast(msg); }
+  catch{ const b=$('copyBox'); b.value=text; $('fallbackCopy').hidden=false; b.focus(); b.select(); try{ if(document.execCommand('copy')){ $('fallbackCopy').hidden=true; toast(msg); } }catch{} }
+}
+$('copyAll').onclick=()=>copy(toTSV(true),`Copied ${rows.length} card${rows.length>1?'s':''} with headers. Paste into cell A1.`);
+$('copyRows').onclick=()=>copy(toTSV(false),`Copied ${rows.length} row${rows.length>1?'s':''}. Paste below your last row.`);
+$('csvBtn').onclick=async()=>{
+  const data='﻿'+toCSV(), filename=`business-cards-${today()}.csv`;
+  if(dlApi){ try{ const r=await dlApi.save({filename,data}); if(r?.status==='saved') toast('CSV saved'); }catch(e){ if(e?.code!=='cancelled') toast('Download was not completed.'); } return; }
+  try{ const u=URL.createObjectURL(new Blob([data],{type:'text/csv;charset=utf-8'})); const a=document.createElement('a'); a.href=u; a.download=filename; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(u),2000); }
+  catch{ toast('Downloads are blocked here. Use "Copy with headers" instead.'); }
+};
+$('clearAll').onclick=e=>{ const b=e.currentTarget; if(b.dataset.armed){ rows=[]; save(); renderTable(); delete b.dataset.armed; b.textContent='Clear'; toast('Table cleared'); } else { b.dataset.armed='1'; b.textContent=`Clear all ${rows.length}?`; setTimeout(()=>{ delete b.dataset.armed; b.textContent='Clear'; },3500); } };
+
+// ---------- engine detection ----------
+function setEngine(e){
+  engine=e;
+  const map={claude:'Text reading: Claude vision',tesseract:'Text reading: Tesseract OCR',manual:'Manual entry'};
+  $('engineTxt').textContent=map[e]; $('engine').classList.toggle('ready',e!=='manual');
+  $('langRow').hidden=e!=='tesseract';
+  $('sideNote').textContent = e==='claude' ? 'Text is read by Claude’s vision model, which handles mixed languages and unusual layouts. Claude asks for your permission the first time.'
+    : e==='tesseract' ? 'Text is read in your browser with Tesseract OCR; images never leave this page. Pick the card’s languages above for better results. Always check names and numbers in the next step.'
+    : 'Automatic reading is unavailable here, so you will type details after capture.';
+}
+async function detectEngine(){
+  if(window.claude&&typeof window.claude.use==='function'){
+    try{
+      const s=await window.claude.use('sample');
+      if(s){ const lim=await s.limits().catch(()=>null); if(lim&&lim.images){ sampleFn=s; setEngine('claude'); } }
+    }catch{}
+    try{ dlApi=await window.claude.use('downloads'); }catch{}
+    if(engine==='claude') return;
+  }
+  try{
+    await Promise.race([getWorker($('lang').value), new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),45000))]);
+    setEngine('tesseract');
+  }catch{ setEngine('manual'); }
+}
+$('lang').onchange=()=>{ getWorker($('lang').value).catch(()=>{}); toast('Language set. Applies to the next capture.'); };
+
+// ---------- boot ----------
+function setOrient(o){
+  orient=o; try{ localStorage.setItem('cardcapture.orient',o); }catch{}
+  document.querySelectorAll('#orient button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.o===o)));
+  if(camOn) layoutGuide();
+}
+document.querySelectorAll('#orient button').forEach(b=>b.onclick=()=>setOrient(b.dataset.o));
+document.addEventListener('keydown',e=>{
+  if((e.key==='r'||e.key==='R')&&!e.ctrlKey&&!e.metaKey&&!/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName||'')&&(state==='front'||state==='back')) setOrient(orient==='portrait'?'landscape':'portrait');
+});
+setOrient(orient);
+renderTable(); setState('front');
+startCamera();
+enginePromise=detectEngine();
+})();
+</script>
+
+</body>
+</html>
