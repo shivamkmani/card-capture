@@ -4,20 +4,23 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <style>[hidden]{display:none!important}body{margin:0}img{max-width:100%}</style>
-<title>Business Card Capture</title>
+<title>Shivam's Card Capture Tool</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap">
 <style>
 /* Layout: viewfinder on the left, step panel on the right, Excel-ready ledger below. */
 :root{
   --paper:#f3f4f7; --surface:#ffffff; --ink:#151922; --muted:#5a6272; --line:#dce0e8;
   --accent:#2a4bd6; --accent-ink:#ffffff; --accent-soft:#e6ebfd;
   --ok:#1d7f55; --warn:#a9521b; --stage:#0c0e13; --stage-ink:#eef1f6;
-  --display:"Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
-  --body:"IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
-  --mono:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  /* Avenir Next LT Pro where it is installed (Avenir Next ships with macOS and iOS); Figtree is the free stand-in elsewhere */
+  --display:"Avenir Next LT Pro","Avenir Next","AvenirNext-Regular","Avenir","Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --body:var(--display);
+  --mono:var(--display);
+  --code:ui-monospace,"SFMono-Regular",Menlo,Consolas,"Liberation Mono",monospace;
+  --wl-glow:#4f6cf0;
   --r:10px;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
@@ -31,7 +34,7 @@
 
 *{box-sizing:border-box}
 html,body{background:var(--paper);color:var(--ink)}
-body{font:15px/1.5 var(--body);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 48px}
+body{font:15px/1.5 var(--body);-webkit-font-smoothing:antialiased;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 48px}
 button,select,input,textarea{font:inherit;color:inherit}
 button{touch-action:manipulation}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
@@ -138,7 +141,7 @@ kbd{font:500 .72rem/1 var(--mono);border:1px solid currentColor;border-radius:4p
 .form textarea{resize:vertical;min-height:62px}
 .form input:focus,.form textarea:focus{border-color:var(--accent);outline:none;box-shadow:0 0 0 3px var(--accent-soft)}
 .raw summary{cursor:pointer;color:var(--muted);font-size:.88rem}
-.raw pre{margin:10px 0 0;white-space:pre-wrap;font:.82rem/1.55 var(--mono);background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:12px;max-height:240px;overflow:auto}
+.raw pre{margin:10px 0 0;white-space:pre-wrap;font:.82rem/1.55 var(--code);background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:12px;max-height:240px;overflow:auto}
 .vactions{display:flex;flex-wrap:wrap;gap:10px}
 
 /* ledger */
@@ -150,7 +153,7 @@ kbd{font:500 .72rem/1 var(--mono);border:1px solid currentColor;border-radius:4p
 .tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
 table{border-collapse:collapse;width:100%;font:.84rem/1.4 var(--mono);font-variant-numeric:tabular-nums}
 th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top;white-space:nowrap;max-width:280px;overflow:hidden;text-overflow:ellipsis}
-td.wrap{white-space:normal;min-width:200px}
+td.wrapcell{white-space:normal;min-width:200px}
 th{font:500 .7rem/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);background:var(--paper);position:sticky;top:0}
 th.col-n,td.col-n{color:var(--muted);width:1%}
 tr:last-child td{border-bottom:0}
@@ -159,10 +162,43 @@ tr.example td{color:var(--muted);font-style:italic}
 .rowbtns{display:flex;gap:4px}
 .rowbtns button{border:1px solid var(--line);background:transparent;border-radius:6px;padding:3px 8px;cursor:pointer;font:.75rem var(--body);color:var(--muted)}
 .rowbtns button:hover{color:var(--ink);border-color:var(--muted)}
-.copybox{width:100%;min-height:120px;font:.8rem var(--mono);border:1px solid var(--line);border-radius:8px;background:var(--paper);padding:10px}
+.copybox{width:100%;min-height:120px;font:.8rem var(--code);border:1px solid var(--line);border-radius:8px;background:var(--paper);padding:10px}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--paper);padding:10px 18px;border-radius:999px;font-weight:500;font-size:.9rem;opacity:0;transition:.25s;pointer-events:none;z-index:20;max-width:calc(100vw - 32px);text-align:center}
 .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
 .cards{display:none}
+.storebar{display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.storebar .dot{width:9px;height:9px;border-radius:50%;flex:none;background:var(--muted)}
+.dot.ok{background:var(--ok)} .dot.bad{background:var(--warn)} .dot.busy{background:var(--accent)}
+.storetxt{flex:1 1 260px;min-width:0;font-size:.9rem;color:var(--muted);overflow-wrap:anywhere}
+.storetxt b{color:var(--ink);font-weight:600}
+.storetxt .err{color:var(--warn)}
+.storetxt .soft{color:var(--muted);font-size:.84rem}
+.storeacts{display:flex;flex-wrap:wrap;gap:8px}
+a.btn{text-decoration:none;color:var(--ink)}
+.ghpanel{display:grid;gap:14px;padding:18px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.ghpanel[hidden]{display:none}
+.ghhead h3{margin:0 0 4px;font:700 1.15rem/1.2 var(--display)}
+.ghhead p{margin:0;color:var(--muted);font-size:.9rem;max-width:70ch}
+.ghhead code{font:.85em var(--mono)}
+.ghgrid{display:grid;grid-template-columns:2fr 1.2fr 1fr;gap:12px}
+.ghgrid .f{display:grid;gap:5px;min-width:0}
+.ghgrid .f.wide{grid-column:1/-1}
+.ghgrid label{font:500 .72rem/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.ghgrid input{width:100%;border:1px solid var(--line);background:var(--paper);border-radius:8px;padding:9px 11px;font-size:.95rem}
+.ghgrid input:focus{border-color:var(--accent);outline:none;box-shadow:0 0 0 3px var(--accent-soft)}
+.check{display:flex;gap:8px;align-items:flex-start;font-size:.88rem;color:var(--muted)}
+.check input{margin-top:3px}
+.ghwarn{border-left:3px solid var(--warn);padding:4px 0 4px 12px;display:grid;gap:8px}
+.ghwarn p{margin:0;font-size:.9rem}
+.ghhelp summary{cursor:pointer;color:var(--accent);font-size:.88rem}
+.ghhelp ol{margin:8px 0 0;padding-left:20px;font-size:.88rem;color:var(--muted);display:grid;gap:4px}
+.ghhelp a{color:var(--accent)}
+.ghmsg{margin:0;font-size:.88rem;color:var(--muted);min-height:1.2em}
+.ghmsg.err{color:var(--warn)}
+.ghacts{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.warnchip{background:color-mix(in srgb,var(--warn) 18%,transparent);color:var(--warn)}
+tr.fresh td,.ccard.fresh{background:var(--accent-soft)}
+.ccard .meta{font:.74rem/1.3 var(--mono);color:var(--muted);margin-top:4px}
 .lightbox{position:fixed;inset:0;z-index:30;background:rgba(7,8,11,.94);display:grid;grid-template-rows:auto 1fr;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
 .lightbox .lb-bar{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 16px;color:#eef1f6;font:500 .8rem/1 var(--mono);letter-spacing:.08em;text-transform:uppercase}
 .lightbox .lb-scroll{overflow:auto;display:grid;place-items:center;padding:8px}
@@ -225,6 +261,11 @@ tr.example td{color:var(--muted);font-style:italic}
   .ledger-actions .btn{justify-content:center;min-height:46px}
   .ledger-head p{font-size:.85rem}
   .tablewrap{display:none}
+  .ghgrid{grid-template-columns:1fr 1fr}
+  .ghgrid .f:first-child{grid-column:1/-1}
+  .ghgrid input{font-size:16px;min-height:44px}
+  .storeacts{width:100%}
+  .storeacts .btn{flex:1;justify-content:center;min-height:44px}
   .cards{display:grid;gap:10px}
   .toast{bottom:calc(150px + env(safe-area-inset-bottom,0px))}
 }
@@ -235,6 +276,72 @@ tr.example td{color:var(--muted);font-style:italic}
 .ccard .ln{font:.84rem/1.45 var(--mono);overflow-wrap:anywhere}
 .ccard .rowbtns{margin-top:8px}
 .ccard .rowbtns button{min-height:38px;padding:6px 14px;font-size:.85rem}
+/* welcome screen: a card enters, the viewfinder locks on, a scan beam reads it, then the title rises */
+.welcome{position:fixed;inset:0;z-index:40;display:grid;place-items:center;overflow:auto;color:var(--stage-ink);
+  background:radial-gradient(ellipse 70% 55% at 50% 38%, color-mix(in srgb,var(--wl-glow) 34%,transparent), transparent 70%),
+    radial-gradient(circle at 1px 1px, rgba(255,255,255,.07) 1px, transparent 0) 0 0/22px 22px, var(--stage);
+  padding:calc(24px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) calc(24px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));
+  cursor:pointer;animation:wlFade .5s ease both}
+.welcome.out{animation:wlOut .5s ease forwards}
+.wl-inner{display:grid;justify-items:center;text-align:center;gap:14px;max-width:640px;width:100%}
+.wl-stage{position:relative;width:min(360px,78vw);aspect-ratio:1.65;max-width:100%;margin-bottom:22px;perspective:900px}
+.wl-card{position:absolute;inset:0;border-radius:12px;background:linear-gradient(150deg,#ffffff 0%,#eef1f8 100%);color:#151922;overflow:hidden;
+  box-shadow:0 30px 60px -20px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.08);transform-origin:50% 60%;
+  animation:wlCardIn 1s cubic-bezier(.2,.8,.2,1) .15s both;text-align:left}
+.wl-band{position:absolute;right:0;top:0;bottom:0;width:30%;background:linear-gradient(160deg,var(--wl-glow),color-mix(in srgb,var(--wl-glow) 60%,#0c0e13))}
+.wl-logo{position:absolute;left:8%;top:13%;color:#2a4bd6}
+.wl-lines{position:absolute;left:8%;top:38%;display:grid;gap:7px;justify-items:start}
+.wl-ln{position:relative;display:inline-block;padding:1px 4px;margin-left:-4px}
+.wl-ln i{font-style:normal}
+.wl-ln1{font:800 clamp(1.15rem,4.6vw,1.6rem)/1.05 var(--display);letter-spacing:-.01em}
+.wl-ln2{font:600 clamp(.72rem,2.6vw,.88rem)/1.2 var(--body);color:#4a5263}
+.wl-ln3{font:500 clamp(.6rem,2.2vw,.72rem)/1.2 var(--body);letter-spacing:.12em;text-transform:uppercase;color:#6a7284}
+.wl-ln::after{content:"";position:absolute;inset:-2px -3px;border:1.5px solid #2a4bd6;border-radius:4px;background:rgba(42,75,214,.07);opacity:0;transform:scale(.85)}
+.wl-ln1::after{animation:wlBox .35s ease 1.45s forwards}
+.wl-ln2::after{animation:wlBox .35s ease 1.7s forwards}
+.wl-ln3::after{animation:wlBox .35s ease 1.95s forwards}
+.wl-tags{position:absolute;right:4%;top:36%;display:grid;gap:7px;justify-items:end}
+.wl-tag{font:700 .58rem/1 var(--body);letter-spacing:.1em;text-transform:uppercase;color:#fff;background:rgba(12,14,19,.38);border:1px solid rgba(255,255,255,.35);padding:4px 7px;border-radius:999px;opacity:0;transform:translateX(10px)}
+.wl-t1{animation:wlTag .4s ease 1.6s forwards}.wl-t2{animation:wlTag .4s ease 1.85s forwards}.wl-t3{animation:wlTag .4s ease 2.1s forwards}
+.wl-beam{position:absolute;left:-5%;right:-5%;height:38%;top:-40%;
+  background:linear-gradient(180deg,transparent,color-mix(in srgb,var(--wl-glow) 20%,transparent) 70%,color-mix(in srgb,var(--wl-glow) 70%,#fff) 98%,transparent);
+  mix-blend-mode:multiply;animation:wlBeam 1.25s cubic-bezier(.45,.05,.55,.95) 1.2s both}
+.wl-beam::after{content:"";position:absolute;left:0;right:0;bottom:1px;height:2px;background:#fff;box-shadow:0 0 14px 3px var(--wl-glow)}
+.wl-br{position:absolute;width:30px;height:30px;border:3px solid #fff;opacity:0;z-index:2}
+.wl-b1{left:-14px;top:-14px;border-right:0;border-bottom:0;border-top-left-radius:9px;--dx:-18px;--dy:-18px}
+.wl-b2{right:-14px;top:-14px;border-left:0;border-bottom:0;border-top-right-radius:9px;--dx:18px;--dy:-18px}
+.wl-b3{left:-14px;bottom:-14px;border-right:0;border-top:0;border-bottom-left-radius:9px;--dx:-18px;--dy:18px}
+.wl-b4{right:-14px;bottom:-14px;border-left:0;border-top:0;border-bottom-right-radius:9px;--dx:18px;--dy:18px}
+.wl-br{animation:wlLock .45s cubic-bezier(.3,1.4,.5,1) .85s forwards, wlPulse .5s ease 2.5s 1}
+.wl-eyebrow{margin:0;font:600 .8rem/1 var(--body);letter-spacing:.24em;text-transform:uppercase;color:color-mix(in srgb,var(--wl-glow) 55%,#fff);opacity:0;animation:wlRise .5s ease 2.2s forwards}
+.wl-title{margin:0;font:800 clamp(2rem,7vw,3.6rem)/1.02 var(--display);letter-spacing:-.025em;text-wrap:balance}
+.wl-w{display:inline-block;opacity:0;transform:translateY(18px);animation:wlRise .55s cubic-bezier(.2,.8,.2,1) forwards}
+.wl-w:nth-child(1){animation-delay:2.35s}.wl-w:nth-child(2){animation-delay:2.45s}.wl-w:nth-child(3){animation-delay:2.55s}.wl-w:nth-child(4){animation-delay:2.65s}
+.wl-w:nth-child(1){background:linear-gradient(90deg,#fff,color-mix(in srgb,var(--wl-glow) 45%,#fff));-webkit-background-clip:text;background-clip:text;color:transparent}
+.wl-sub{margin:4px 0 6px;max-width:44ch;color:rgba(238,241,246,.72);font-size:1rem;opacity:0;animation:wlRise .5s ease 2.85s forwards}
+.wl-go{position:relative;overflow:hidden;border:0;border-radius:999px;background:#fff;color:#151922;font:700 1rem/1 var(--body);padding:15px 28px;cursor:pointer;
+  opacity:0;animation:wlRise .5s ease 3s forwards;box-shadow:0 10px 30px -10px color-mix(in srgb,var(--wl-glow) 80%,transparent)}
+.wl-go span{position:relative;z-index:1}
+.wl-prog{position:absolute;left:0;bottom:0;height:3px;width:100%;background:var(--wl-glow);transform-origin:left;transform:scaleX(0)}
+.welcome.counting .wl-prog{animation:wlProg var(--wl-wait,3.4s) linear forwards}
+.wl-go:focus-visible{outline:2px solid #fff;outline-offset:3px}
+.wl-skip{margin:0;font-size:.8rem;color:rgba(238,241,246,.45);opacity:0;animation:wlRise .5s ease 3.1s forwards}
+@keyframes wlFade{from{opacity:0}to{opacity:1}}
+@keyframes wlOut{to{opacity:0;transform:scale(1.04)}}
+@keyframes wlCardIn{from{opacity:0;transform:translateY(46px) rotateX(58deg) rotateZ(-9deg) scale(.86)}to{opacity:1;transform:none}}
+@keyframes wlLock{from{opacity:0;transform:translate(var(--dx),var(--dy)) scale(1.2)}to{opacity:1;transform:none}}
+@keyframes wlPulse{50%{border-color:color-mix(in srgb,var(--wl-glow) 60%,#fff)}}
+@keyframes wlBeam{from{top:-40%}to{top:105%}}
+@keyframes wlBox{to{opacity:1;transform:none}}
+@keyframes wlTag{to{opacity:1;transform:none}}
+@keyframes wlRise{to{opacity:1;transform:none}}
+@keyframes wlProg{to{transform:scaleX(1)}}
+@media (max-width:700px){ .wl-inner{gap:12px} .wl-sub{font-size:.92rem} .wl-tags{display:none} .wl-band{width:22%} }
+@media (prefers-reduced-motion:reduce){
+  .welcome,.wl-card,.wl-br,.wl-ln::after,.wl-tag,.wl-eyebrow,.wl-w,.wl-sub,.wl-go,.wl-skip{animation:none!important;opacity:1!important;transform:none!important}
+  .wl-beam{display:none}
+}
+
 @media (prefers-reduced-motion:reduce){
   .flip .card3d,.reading .bar.indef i{animation:none}
   *{transition:none!important}
@@ -247,7 +354,7 @@ tr.example td{color:var(--muted);font-style:italic}
 <header class="top">
   <div class="brand">
     <svg width="30" height="22" viewBox="0 0 30 22" aria-hidden="true"><rect x="1" y="1" width="28" height="20" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="5" y="6" width="10" height="2.4" rx="1" fill="currentColor"/><rect x="5" y="11" width="16" height="1.8" rx=".9" fill="currentColor" opacity=".5"/><rect x="5" y="14.5" width="12" height="1.8" rx=".9" fill="currentColor" opacity=".5"/></svg>
-    Card Capture
+    Shivam’s Card Capture
   </div>
   <ol class="steps" id="steps" aria-label="Progress">
     <li data-s="front"><b>1</b><span>Front</span></li>
@@ -347,7 +454,7 @@ tr.example td{color:var(--muted);font-style:italic}
     <div class="ledger-head">
       <div>
         <h2>Scanned cards <span id="count" style="color:var(--muted);font-weight:500"></span></h2>
-        <p>Copy and paste into Excel at cell A1 (with headers) or below your last row (rows only). Columns split automatically.</p>
+        <p>Newest first. Copy and paste into Excel at cell A1 (with headers); columns split automatically.</p>
       </div>
       <div class="ledger-actions">
         <button class="btn primary" id="copyAll" type="button">Copy with headers</button>
@@ -357,6 +464,42 @@ tr.example td{color:var(--muted);font-style:italic}
         <button class="btn ghost" id="clearAll" type="button">Clear</button>
       </div>
     </div>
+    <div class="storebar">
+      <span class="dot local" id="storeDot"></span>
+      <span class="storetxt" id="storeTxt">Loading the shared CSV…</span>
+      <span class="storeacts">
+        <button class="btn" id="importLocal" type="button" hidden></button>
+        <a class="btn ghost" id="storeView" target="_blank" rel="noopener" hidden>Open CSV on GitHub</a>
+        <button class="btn" id="storeRefresh" type="button" hidden>Refresh</button>
+        <button class="btn" id="storeConnect" type="button">Add token to edit</button>
+      </span>
+    </div>
+    <form class="ghpanel" id="ghPanel" hidden autocomplete="off">
+      <div class="ghhead">
+        <h3>Shared CSV on GitHub</h3>
+        <p>Everyone who opens this page sees the contacts in this CSV. To add, edit or delete, paste a GitHub token with write access. The token stays in this browser and is only sent to GitHub.</p>
+      </div>
+      <div class="ghgrid">
+        <div class="f"><label for="ghRepo">Repository</label><input id="ghRepo" placeholder="shivamkmani/card-capture" autocapitalize="off" autocorrect="off" spellcheck="false"></div>
+        <div class="f"><label for="ghPath">File</label><input id="ghPath" value="contacts.csv" autocapitalize="off" autocorrect="off" spellcheck="false"></div>
+        <div class="f"><label for="ghBranch">Branch</label><input id="ghBranch" value="main" autocapitalize="off" autocorrect="off" spellcheck="false"></div>
+        <div class="f wide"><label for="ghToken">Access token</label><input id="ghToken" type="password" placeholder="github_pat_… or ghp_…" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
+      </div>
+      <label class="check"><input type="checkbox" id="ghRemember" checked> Remember the token on this device (untick on shared computers)</label>
+      <details class="ghhelp"><summary>How to get a token</summary>
+        <ol>
+          <li><b>Repository owner:</b> open <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">GitHub, Fine-grained token</a>. Choose <b>Only select repositories</b> and pick this repository, then set <b>Contents</b> to <b>Read and write</b>. Generate and paste it above.</li>
+          <li><b>Colleagues:</b> the owner adds them under the repository's Settings, Collaborators. Each colleague then creates a <a href="https://github.com/settings/tokens/new?scopes=public_repo&amp;description=Card%20Capture" target="_blank" rel="noopener">classic token</a> with the <b>public_repo</b> box ticked and pastes it here.</li>
+        </ol>
+      </details>
+      <p class="ghmsg" id="ghMsg" role="status"></p>
+      <div class="ghacts">
+        <button class="btn primary" id="ghSave" type="submit">Save</button>
+        <button class="btn ghost" id="ghCancel" type="button">Cancel</button>
+        <span style="flex:1"></span>
+        <button class="btn ghost" id="ghDisconnect" type="button" hidden>Remove token</button>
+      </div>
+    </form>
     <div class="tablewrap"><table id="table"><thead></thead><tbody></tbody></table></div>
     <div class="cards" id="cards"></div>
     <div id="fallbackCopy" hidden style="display:grid;gap:6px">
@@ -365,6 +508,31 @@ tr.example td{color:var(--muted);font-style:italic}
     </div>
   </section>
 </main>
+<div class="welcome" id="welcome" role="dialog" aria-modal="true" aria-labelledby="wlTitle" hidden>
+  <div class="wl-inner">
+    <div class="wl-stage" aria-hidden="true">
+      <span class="wl-br wl-b1"></span><span class="wl-br wl-b2"></span><span class="wl-br wl-b3"></span><span class="wl-br wl-b4"></span>
+      <div class="wl-card">
+        <div class="wl-band"></div>
+        <svg class="wl-logo" width="34" height="25" viewBox="0 0 30 22"><rect x="1" y="1" width="28" height="20" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="5" y="6" width="10" height="2.4" rx="1" fill="currentColor"/><rect x="5" y="11" width="16" height="1.8" rx=".9" fill="currentColor" opacity=".5"/><rect x="5" y="14.5" width="12" height="1.8" rx=".9" fill="currentColor" opacity=".5"/></svg>
+        <div class="wl-lines">
+          <span class="wl-ln wl-ln1"><i>Shivam</i></span>
+          <span class="wl-ln wl-ln2"><i>Card Capture Tool</i></span>
+          <span class="wl-ln wl-ln3"><i>Scan · Verify · Share</i></span>
+        </div>
+        <div class="wl-tags">
+          <span class="wl-tag wl-t1">Name</span><span class="wl-tag wl-t2">Title</span><span class="wl-tag wl-t3">Notes</span>
+        </div>
+        <div class="wl-beam"></div>
+      </div>
+    </div>
+    <p class="wl-eyebrow">Welcome to</p>
+    <h1 class="wl-title" id="wlTitle"><span class="wl-w">Shivam’s</span> <span class="wl-w">Card</span> <span class="wl-w">Capture</span> <span class="wl-w">Tool</span></h1>
+    <p class="wl-sub">Scan both sides of a business card, check the details, and add it to the shared list.</p>
+    <button class="wl-go" id="wlGo" type="button"><span>Start scanning</span><i class="wl-prog"></i></button>
+    <p class="wl-skip">Tap anywhere to skip</p>
+  </div>
+</div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <div class="lightbox" id="lightbox" hidden role="dialog" aria-label="Card photo">
   <div class="lb-bar"><span id="lbTitle">Front</span><span style="display:flex;gap:8px"><button class="btn" id="lbZoom" type="button">Zoom</button><button class="btn light" id="lbClose" type="button">Close</button></span></div>
@@ -379,22 +547,28 @@ const FIELDS = [
   ['mobile','Mobile'],['office','Office phone'],['website','Website'],['linkedin','LinkedIn'],
   ['address','Address'],['notes','Notes']
 ];
-const COLS = [...FIELDS, ['scanned','Date scanned']];
+const COLS = [...FIELDS, ['added','Added'], ['by','Added by'], ['id','ID']];
 const CARD_AR = 1.65; // 90 x 55 mm, close to 3.5 x 2 in
 let orient='landscape';
 try{ if(localStorage.getItem('cardcapture.orient')==='portrait') orient='portrait'; }catch{}
 const cardAR=()=>orient==='portrait'?1/CARD_AR:CARD_AR;
 const STORE = 'cardcapture.rows.v1';
-const EXAMPLE = {name:'Priya Raman',title:'Director, Government Affairs',company:'Example Industries Pvt. Ltd.',email:'priya.raman@example.com',mobile:'+91 98100 00000',office:'+91 11 4000 0000',website:'www.example.com',linkedin:'',address:'4th Floor, Tower B, Sector 62, Noida 201309',notes:'Chinese: 拉曼',scanned:'2026-10-29'};
+const EXAMPLE = {name:'Priya Raman',title:'Director, Government Affairs',company:'Example Industries Pvt. Ltd.',email:'priya.raman@example.com',mobile:'+91 98100 00000',office:'+91 11 4000 0000',website:'www.example.com',linkedin:'',address:'4th Floor, Tower B, Sector 62, Noida 201309',notes:'Chinese: 拉曼',added:'2026-10-29 10:30:00',by:'example'};
 
 const video=$('video'), stage=$('stage'), still=$('still');
 let stream=null, camOn=false, state='front', engine='manual', sampleFn=null, dlApi=null;
 let front=null, back=null; // {blob, url, ocrCanvas, textPromise}
-let rows=[]; let enginePromise=Promise.resolve(); let editingIdx=-1; let current=null; let abortCtl=null;
+let rows=[]; let enginePromise=Promise.resolve(); let editingId=null; let current=null; let abortCtl=null;
 
 // ---------- storage ----------
-try{ rows = JSON.parse(localStorage.getItem(STORE)||'[]'); if(!Array.isArray(rows)) rows=[]; }catch{ rows=[]; }
-const save = () => { try{ localStorage.setItem(STORE, JSON.stringify(rows)); }catch{} };
+function loadLocal(){
+  let r=[]; try{ r=JSON.parse(localStorage.getItem(STORE)||'[]'); if(!Array.isArray(r)) r=[]; }catch{ r=[]; }
+  // older saves had a date only and no id
+  r=r.map((x,i)=>({...x,id:x.id||('l'+Date.now().toString(36)+i),added:x.added||((x.scanned||'')?x.scanned+' 00:00:'+String(i%60).padStart(2,'0'):''),scanned:undefined}));
+  return r;
+}
+function saveLocal(){ try{ rows.length?localStorage.setItem(STORE, JSON.stringify(rows.map(({_pending,...r})=>r))):localStorage.removeItem(STORE); }catch{} }
+rows=loadLocal();
 
 // ---------- toast ----------
 let tt; function toast(msg){ const t=$('toast'); t.textContent=msg; t.classList.add('on'); clearTimeout(tt); tt=setTimeout(()=>t.classList.remove('on'),2400); }
@@ -918,13 +1092,13 @@ $('form').addEventListener('keydown',e=>{ if(e.key==='Enter'&&(e.ctrlKey||e.meta
 $('confirm').onclick=()=>{
   const d=readForm();
   if(!Object.values(d).some(Boolean)){ toast('All fields are empty. Fill in at least one.'); return; }
-  if(editingIdx>=0){ rows[editingIdx]={...rows[editingIdx],...d}; editingIdx=-1; toast('Changes saved'); }
-  else { d.scanned=today(); rows.push(d); toast('Added to table. Ready for the next card.'); }
-  save(); renderTable(); resetScan(); setSteps('table');
+  if(editingId){ const id=editingId; editingId=null; editRow(id,d); }
+  else addRow(d);
+  resetScan(); setSteps('table');
   setTimeout(()=>{ if(state==='front') setSteps('front'); },2500);
   if(!$('ledger').getBoundingClientRect || $('ledger').getBoundingClientRect().top>innerHeight) $('ledger').scrollIntoView({behavior:'smooth'});
 };
-$('rescan').onclick=()=>{ editingIdx=-1; resetScan(); window.scrollTo({top:0,behavior:'smooth'}); };
+$('rescan').onclick=()=>{ editingId=null; resetScan(); window.scrollTo({top:0,behavior:'smooth'}); };
 function resetScan(){
   if(abortCtl) abortCtl.abort(); abortCtl=null;
   front=null; back=null; current=null; setThumb('front',null); setThumb('back',null);
@@ -934,39 +1108,287 @@ function today(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMon
 
 // ---------- table ----------
 function esc(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+const byNewest=list=>list.map((r,i)=>[r,i]).sort((a,b)=>String(b[0].added||'').localeCompare(String(a[0].added||''))||a[1]-b[1]).map(x=>x[0]);
+const TABLE_COLS=[['added','Added'],...FIELDS,['by','Added by']];
+let freshId=null;
 function renderTable(){
+  const list=byNewest(rows);
+  const show=list.length?list:[EXAMPLE];
+  const ex=!list.length;
   const t=$('table');
-  t.tHead.innerHTML='<tr><th class="col-n">#</th>'+COLS.map(([,l])=>`<th>${l}</th>`).join('')+'<th></th></tr>';
-  const list=rows.length?rows:[EXAMPLE];
-  t.tBodies[0].innerHTML=list.map((r,i)=>`<tr class="${rows.length?'':'example'}"><td class="col-n">${rows.length?i+1:'<span class="chip">Example</span>'}</td>`+COLS.map(([k])=>`<td class="${k==='address'||k==='notes'?'wrap':''}" title="${esc(r[k]||'')}">${esc(r[k]||'')}</td>`).join('')+`<td>${rows.length?`<div class="rowbtns"><button type="button" data-edit="${i}">Edit</button><button type="button" data-del="${i}">Delete</button></div>`:''}</td></tr>`).join('');
-  $('cards').innerHTML=list.map((r,i)=>{
+  t.tHead.innerHTML='<tr>'+TABLE_COLS.map(([,l])=>`<th>${l}</th>`).join('')+'<th></th></tr>';
+  const status=r=>r._pending?'<span class="chip warnchip">Not synced</span>':(ex?'<span class="chip">Example</span>':'');
+  const btns=r=>ex||(shared()&&!canWrite()&&!r._pending)?'':`<div class="rowbtns"><button type="button" data-edit="${esc(r.id)}">Edit</button><button type="button" data-del="${esc(r.id)}">Delete</button></div>`;
+  t.tBodies[0].innerHTML=show.map(r=>`<tr class="${ex?'example':''} ${r.id&&r.id===freshId?'fresh':''}">`+TABLE_COLS.map(([k],ci)=>`<td class="${k==='address'||k==='notes'?'wrapcell':''}${k==='added'?' col-n':''}" title="${esc(r[k]||'')}">${ci===0?status(r):''}${esc(k==='added'?shortTime(r[k]):(r[k]||''))}</td>`).join('')+`<td>${btns(r)}</td></tr>`).join('');
+  $('cards').innerHTML=show.map(r=>{
     const sub=[r.title,r.company].filter(Boolean).map(esc).join(' · ');
     const lines=[r.email,r.mobile,r.office,r.website].filter(Boolean).map(x=>`<div class="ln">${esc(x)}</div>`).join('');
-    return `<article class="ccard ${rows.length?'':'example'}">${rows.length?'':'<span><span class="chip">Example</span></span>'}<div class="nm">${esc(r.name||'(no name)')}</div>${sub?`<div class="sub">${sub}</div>`:''}${lines}${rows.length?`<div class="rowbtns"><button type="button" data-edit="${i}">Edit</button><button type="button" data-del="${i}">Delete</button></div>`:''}</article>`;
+    const meta=[shortTime(r.added),r.by].filter(Boolean).map(esc).join(' · ');
+    return `<article class="ccard ${ex?'example':''} ${r.id&&r.id===freshId?'fresh':''}">${status(r)?`<span>${status(r)}</span>`:''}<div class="nm">${esc(r.name||'(no name)')}</div>${sub?`<div class="sub">${sub}</div>`:''}${lines}${meta?`<div class="meta">${meta}</div>`:''}${btns(r)}</article>`;
   }).join('');
-  $('count').textContent=rows.length?`(${rows.length})`:'';
-  ['copyAll','copyRows','csvBtn','clearAll','shareBtn'].forEach(id=>$(id).disabled=!rows.length);
+  $('count').textContent=list.length?`(${list.length})`:'';
+  ['copyAll','copyRows','csvBtn','clearAll','shareBtn'].forEach(id=>$(id).disabled=!list.length);
+  $('clearAll').hidden=shared();
+  renderStorage();
 }
+function shortTime(s){ if(!s) return ''; const m=String(s).match(/^(\d{4}-\d\d-\d\d)[ T](\d\d:\d\d)/); if(!m) return s; return m[1]===today()?'Today '+m[2]:m[1]+' '+m[2]; }
+function nowStamp(){ const d=new Date(),p=n=>String(n).padStart(2,'0'); return `${today()} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`; }
+const newId=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+
 function rowAction(e){
   const ed=e.target.closest('[data-edit]'), del=e.target.closest('[data-del]');
-  if(del){ const i=+del.dataset.del; const btn=del; if(btn.dataset.armed){ rows.splice(i,1); save(); renderTable(); toast('Card deleted'); } else { btn.dataset.armed='1'; btn.textContent='Confirm'; setTimeout(()=>{ if(btn.isConnected){ delete btn.dataset.armed; btn.textContent='Delete'; } },3000); } }
-  if(ed){ editingIdx=+ed.dataset.edit; openVerify({data:{...rows[editingIdx]},raw:'',front:null,back:null},'',true); }
+  if(del){
+    const id=del.dataset.del;
+    if(!del.dataset.armed){ del.dataset.armed='1'; del.textContent=shared()?'Delete for everyone?':'Confirm'; setTimeout(()=>{ if(del.isConnected){ delete del.dataset.armed; del.textContent='Delete'; } },3500); return; }
+    removeRow(id);
+  }
+  if(ed){ const r=rows.find(x=>x.id===ed.dataset.edit); if(!r) return; editingId=r.id; openVerify({data:{...r},raw:'',front:null,back:null},'',true); }
 }
 $('table').addEventListener('click',rowAction);
 $('cards').addEventListener('click',rowAction);
+
+// ---------- CSV ----------
 const cellTSV=v=>String(v||'').replace(/[\t\r\n]+/g,'; ').trim();
-function toTSV(withHead){ const lines=rows.map(r=>COLS.map(([k])=>cellTSV(r[k])).join('\t')); if(withHead) lines.unshift(COLS.map(([,l])=>l).join('\t')); return lines.join('\r\n'); }
-const cellCSV=v=>{ v=String(v||''); return /[",\r\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; };
-function toCSV(){ return [COLS.map(([,l])=>l), ...rows.map(r=>COLS.map(([k])=>r[k]))].map(a=>a.map(cellCSV).join(',')).join('\r\n'); }
+const COPY_COLS=COLS.filter(([k])=>k!=='id');
+function toTSV(withHead){ const lines=byNewest(rows).map(r=>COPY_COLS.map(([k])=>cellTSV(r[k])).join('\t')); if(withHead) lines.unshift(COPY_COLS.map(([,l])=>l).join('\t')); return lines.join('\r\n'); }
+const cellCSV=v=>{ v=String(v??''); return /[",\r\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; };
+function toCSV(list=rows){ return [COLS.map(([,l])=>l), ...byNewest(list).map(r=>COLS.map(([k])=>r[k]))].map(a=>a.map(cellCSV).join(',')).join('\r\n')+'\r\n'; }
+function parseCSV(t){
+  t=String(t||'').replace(/^\uFEFF/,''); const out=[]; let row=[],f='',q=false;
+  for(let i=0;i<t.length;i++){ const c=t[i];
+    if(q){ if(c==='"'){ if(t[i+1]==='"'){ f+='"'; i++; } else q=false; } else f+=c; }
+    else if(c==='"') q=true;
+    else if(c===','){ row.push(f); f=''; }
+    else if(c==='\n'||c==='\r'){ if(c==='\r'&&t[i+1]==='\n') i++; row.push(f); out.push(row); row=[]; f=''; }
+    else f+=c; }
+  if(f!==''||row.length){ row.push(f); out.push(row); }
+  const data=out.filter(r=>r.some(x=>x.trim()!==''));
+  if(!data.length) return [];
+  const labelToKey={}; COLS.forEach(([k,l])=>{ labelToKey[l.toLowerCase()]=k; labelToKey[k]=k; }); labelToKey['date scanned']='added';
+  const keys=data[0].map(h=>labelToKey[h.trim().toLowerCase()]||null);
+  return data.slice(1).map(cells=>{ const r={}; keys.forEach((k,i)=>{ if(k) r[k]=(cells[i]||'').trim(); }); if(!r.id) r.id='h'+hash(cells.join('|')); return r; });
+}
+function hash(s){ let h=2166136261; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619); } return (h>>>0).toString(36); }
+const b64enc=s=>{ const b=new TextEncoder().encode(s); let bin=''; for(let i=0;i<b.length;i+=0x8000) bin+=String.fromCharCode.apply(null,b.subarray(i,i+0x8000)); return btoa(bin); };
+const b64dec=s=>new TextDecoder().decode(Uint8Array.from(atob(String(s).replace(/\s/g,'')),c=>c.charCodeAt(0)));
+
+// ---------- shared CSV in a GitHub repository ----------
+// Everyone who opens the hosted page sees the CSV. Adding, editing and deleting need a GitHub token.
+const GHKEY='cardcapture.github.v2', TOKKEY='cardcapture.github.token', LOGINKEY='cardcapture.github.login', PENDKEY='cardcapture.pending.v1';
+const framedInClaude=(()=>{ try{ return window.self!==window.top && !!window.claude; }catch{ return true; } })();
+function defaultRepo(){
+  const m=location.hostname.match(/^([\w-]+)\.github\.io$/i);
+  if(m){ const seg=location.pathname.split('/').filter(Boolean)[0]; return seg&&!/\.html?$/i.test(seg)?`${m[1]}/${seg}`:`${m[1]}/${m[1]}.github.io`; }
+  return 'shivamkmani/card-capture';
+}
+let cfg=null, token='', ghLogin='', lastSync=0, syncing=false, syncErr='', pollT=null, etag='', cache={list:[],sha:null}, staleCopy=false;
+function readJSON(store,k,d){ try{ const v=JSON.parse(store.getItem(k)||'null'); return v??d; }catch{ return d; } }
+function writeJSON(store,k,v){ try{ v==null?store.removeItem(k):store.setItem(k,JSON.stringify(v)); }catch{} }
+(function loadCfg(){
+  if(framedInClaude) return;
+  try{ localStorage.removeItem('cardcapture.github.v1'); }catch{}
+  const c=readJSON(localStorage,GHKEY,null);
+  cfg=(c&&c.repo)?{repo:c.repo,path:c.path||'contacts.csv',branch:c.branch||'main'}:{repo:defaultRepo(),path:'contacts.csv',branch:'main'};
+  try{ token=localStorage.getItem(TOKKEY)||sessionStorage.getItem(TOKKEY)||''; ghLogin=localStorage.getItem(LOGINKEY)||''; }catch{}
+})();
+const shared=()=>!!cfg;
+const canWrite=()=>!!(cfg&&token);
+let pending=readJSON(localStorage,PENDKEY,[]); if(!Array.isArray(pending)) pending=[];
+const savePending=()=>writeJSON(localStorage,PENDKEY,pending.length?pending:null);
+
+async function ghFetch(path,opts={},accept='application/vnd.github+json',extra={}){
+  const headers={'Accept':accept,'X-GitHub-Api-Version':'2022-11-28',...extra};
+  if(token) headers.Authorization='Bearer '+token;
+  if(opts.body) headers['Content-Type']='application/json';
+  return fetch('https://api.github.com'+path,{...opts,headers,cache:'no-store'});
+}
+const encPath=()=>cfg.path.split('/').map(encodeURIComponent).join('/');
+const filePath=()=>`/repos/${cfg.repo}/contents/${encPath()}`;
+const rawUrl=()=>`https://raw.githubusercontent.com/${cfg.repo}/${encodeURIComponent(cfg.branch)}/${encPath()}`;
+async function ghErr(r){ let m=''; try{ m=(await r.json()).message||''; }catch{} const e=new Error(m||('HTTP '+r.status)); e.status=r.status; return e; }
+async function ghRead(conditional){
+  const url=filePath()+'?ref='+encodeURIComponent(cfg.branch);
+  let r;
+  try{ r=await ghFetch(url,{},'application/vnd.github+json',conditional&&etag?{'If-None-Match':etag}:{}); }
+  catch(e){ if(conditional&&etag){ etag=''; r=await ghFetch(url); } else throw e; }
+  if(r.status===304){ staleCopy=false; return cache; }
+  if(r.status===404&&!token){
+    // no file yet, or the API hid it; the raw copy settles which
+    const rr=await fetch(rawUrl()+'?t='+Date.now(),{cache:'no-store'}).catch(()=>null);
+    if(rr&&rr.ok){ staleCopy=true; return (cache={list:parseCSV(await rr.text()),sha:null}); }
+    etag=''; staleCopy=false; return (cache={list:[],sha:null});
+  }
+  if(r.status===404){ etag=''; staleCopy=false; return (cache={list:[],sha:null}); }
+  if((r.status===403||r.status===429)&&!token){
+    // visitors without a token share GitHub's hourly limit; fall back to the raw file, which can lag a few minutes
+    const rr=await fetch(rawUrl()+'?t='+Date.now(),{cache:'no-store'});
+    if(rr.status===404){ staleCopy=true; return (cache={list:[],sha:null}); }
+    if(!rr.ok) throw await ghErr(r);
+    staleCopy=true; return (cache={list:parseCSV(await rr.text()),sha:null});
+  }
+  if(!r.ok) throw await ghErr(r);
+  etag=r.headers.get('ETag')||'';
+  const j=await r.json(); let text;
+  if(j.encoding==='base64'&&j.content) text=b64dec(j.content);
+  else { const r2=await ghFetch(url,{},'application/vnd.github.raw+json'); if(!r2.ok) throw await ghErr(r2); text=await r2.text(); }
+  staleCopy=false;
+  return (cache={list:parseCSV(text),sha:j.sha});
+}
+async function ghWrite(mutate,message){
+  // read, change, write back with the file's sha; if someone else saved first, start again
+  for(let attempt=0;attempt<4;attempt++){
+    const {list,sha}=await ghRead(false);
+    const next=mutate(list.map(r=>({...r})));
+    const body={message,content:b64enc('﻿'+toCSV(next)),branch:cfg.branch};
+    if(sha) body.sha=sha;
+    const r=await ghFetch(filePath(),{method:'PUT',body:JSON.stringify(body)});
+    if(r.ok){ etag=''; cache={list:next,sha:null}; return next; }
+    const e=await ghErr(r);
+    if(r.status===409||(r.status===422&&/sha/i.test(e.message))){ await new Promise(res=>setTimeout(res,300+attempt*400)); continue; }
+    e.write=true; throw e;
+  }
+  throw new Error('Someone else kept saving at the same moment. Try again.');
+}
+function explain(e){
+  if(!navigator.onLine) return 'You are offline.';
+  if(e.status===401) return 'GitHub did not accept the token. It may have expired or been revoked.';
+  if(e.status===403&&!token) return 'GitHub limits visitors without a token to 60 requests an hour. Try again shortly.';
+  if(e.status===403||(e.write&&e.status===404)) return `The token cannot write to ${cfg.repo}. Fine-grained token: give it Contents: Read and write on that repository. Classic token: tick public_repo.`;
+  if(e.status===404) return 'Repository or branch not found.';
+  if(e instanceof TypeError) return 'Could not reach GitHub. Check your connection or network restrictions.';
+  return e.message||'GitHub returned an error.';
+}
+function mergedView(list){ const ids=new Set(list.map(r=>r.id)); return [...pending.filter(p=>!ids.has(p.id)).map(p=>({...p,_pending:true})),...list]; }
+async function sync(quiet){
+  if(!cfg||syncing) return; syncing=true; renderStorage();
+  try{
+    if(pending.length&&token){
+      const adds=pending.slice();
+      await ghWrite(list=>{ const ids=new Set(list.map(r=>r.id)); return [...adds.filter(p=>!ids.has(p.id)),...list]; }, adds.length===1?`Add contact: ${adds[0].name||adds[0].email||'unnamed'}`:`Add ${adds.length} contacts`);
+      pending=pending.filter(p=>!adds.some(a=>a.id===p.id)); savePending();
+    }
+    const {list}=await ghRead(true);
+    rows=mergedView(list); lastSync=Date.now(); syncErr='';
+  }catch(e){ syncErr=explain(e); if(!quiet) toast(syncErr); rows=mergedView(rows.filter(r=>!r._pending)); }
+  finally{ syncing=false; renderTable(); }
+}
+function startPolling(){ clearInterval(pollT); pollT=setInterval(()=>{ if(cfg&&document.visibilityState==='visible') sync(true); }, token?30000:120000); }
+document.addEventListener('visibilitychange',()=>{ if(cfg&&document.visibilityState==='visible'&&Date.now()-lastSync>(token?10000:60000)) sync(true); });
+window.addEventListener('online',()=>{ if(cfg) sync(true); });
+
+function needToken(what){ toast(`Add your GitHub token to ${what}.`); openPanel(); }
+async function addRow(d){
+  const row={...d,added:nowStamp(),by:ghLogin||'',id:newId()};
+  freshId=row.id;
+  if(!cfg){ rows.push(row); saveLocal(); renderTable(); toast('Added. Ready for the next card.'); return; }
+  pending.push(row); savePending();
+  rows=mergedView(rows.filter(r=>!r._pending)); renderTable();
+  if(!token){ toast('Saved on this device only. Add your GitHub token to put it in the shared CSV.'); openPanel(); return; }
+  toast('Added. Saving to the shared CSV…');
+  await sync(true);
+  toast(pending.some(p=>p.id===row.id)?'Saved here, not yet in the shared CSV. It will retry. '+syncErr:'Saved to the shared CSV.');
+}
+async function editRow(id,d){
+  if(!cfg){ rows=rows.map(r=>r.id===id?{...r,...d}:r); saveLocal(); renderTable(); toast('Changes saved'); return; }
+  const p=pending.find(x=>x.id===id); if(p){ Object.assign(p,d); savePending(); rows=mergedView(rows.filter(r=>!r._pending)); renderTable(); if(token) sync(true); return; }
+  if(!token){ needToken('edit the shared CSV'); return; }
+  try{ const next=await ghWrite(list=>list.map(r=>r.id===id?{...r,...d}:r),`Edit contact: ${d.name||d.email||id}`); rows=mergedView(next); lastSync=Date.now(); renderTable(); toast('Changes saved to the shared CSV'); }
+  catch(e){ toast('Not saved. '+explain(e)); sync(true); }
+}
+async function removeRow(id){
+  if(!cfg){ rows=rows.filter(r=>r.id!==id); saveLocal(); renderTable(); toast('Card deleted'); return; }
+  if(pending.some(p=>p.id===id)){ pending=pending.filter(p=>p.id!==id); savePending(); rows=rows.filter(r=>r.id!==id); renderTable(); return; }
+  if(!token){ needToken('delete from the shared CSV'); return; }
+  const gone=rows.find(r=>r.id===id);
+  try{ const next=await ghWrite(list=>list.filter(r=>r.id!==id),`Delete contact: ${gone?.name||id}`); rows=mergedView(next); renderTable(); toast('Deleted from the shared CSV. It stays in the repository history.'); }
+  catch(e){ toast('Not deleted. '+explain(e)); }
+}
+
+// storage bar and settings panel
+function renderStorage(){
+  const el=$('storeTxt'), dot=$('storeDot');
+  const localRows=readJSON(localStorage,STORE,[]);
+  if(!cfg){
+    el.innerHTML='Saved in <b>this browser only</b>. Open the hosted page to use the shared CSV.'; dot.className='dot local';
+    ['storeConnect','storeRefresh','storeView','importLocal'].forEach(id=>$(id).hidden=true); return;
+  }
+  const ago=lastSync?Math.max(0,Math.round((Date.now()-lastSync)/1000)):null;
+  const when=syncing?'syncing…':syncErr?'not synced':ago==null?'loading…':ago<10?'updated just now':ago<90?`updated ${ago}s ago`:`updated ${Math.round(ago/60)} min ago`;
+  const mode=token?(ghLogin?`adding as <b>${esc(ghLogin)}</b>`:''):'<b>view only</b>';
+  el.innerHTML=`Shared CSV: <b>${esc(cfg.repo)}</b> / ${esc(cfg.path)} · ${when}${mode?' · '+mode:''}${pending.length?` · ${pending.length} waiting to upload`:''}${staleCopy&&!syncErr?'<br><span class="soft">Showing GitHub’s cached copy, which can be a few minutes behind.</span>':''}${syncErr?`<br><span class="err">${esc(syncErr)}</span>`:''}`;
+  dot.className='dot '+(syncErr?'bad':syncing?'busy':'ok');
+  $('storeConnect').hidden=false; $('storeConnect').textContent=token?'Settings':'Add token to edit';
+  $('storeRefresh').hidden=false;
+  const v=$('storeView'); v.hidden=false; v.href=`https://github.com/${cfg.repo}/blob/${encodeURIComponent(cfg.branch)}/${cfg.path}`;
+  const n=Array.isArray(localRows)?localRows.length:0;
+  $('importLocal').hidden=!n;
+  if(n) $('importLocal').textContent=`Add ${n} contact${n>1?'s':''} saved in this browser`;
+}
+setInterval(()=>{ if(cfg&&!syncing) renderStorage(); },15000);
+$('storeRefresh').onclick=()=>sync(false);
+function openPanel(){
+  const p=$('ghPanel'); if(!cfg) return; p.hidden=false;
+  $('ghRepo').value=cfg.repo; $('ghPath').value=cfg.path; $('ghBranch').value=cfg.branch;
+  $('ghToken').value=''; $('ghToken').placeholder=token?'Saved. Paste a new token to replace it.':'github_pat_… or ghp_…';
+  let rem=true; try{ rem=token?!!localStorage.getItem(TOKKEY):true; }catch{} $('ghRemember').checked=rem;
+  $('ghDisconnect').hidden=!token; $('ghMsg').textContent=''; $('ghMsg').className='ghmsg';
+  p.scrollIntoView({behavior:'smooth',block:'nearest'});
+  setTimeout(()=>(token?$('ghRepo'):$('ghToken')).focus({preventScroll:true}),250);
+}
+$('storeConnect').onclick=()=>{ $('ghPanel').hidden?openPanel():($('ghPanel').hidden=true); };
+$('ghCancel').onclick=()=>{ $('ghPanel').hidden=true; };
+$('ghDisconnect').onclick=()=>{
+  token=''; ghLogin=''; try{ localStorage.removeItem(TOKKEY); sessionStorage.removeItem(TOKKEY); localStorage.removeItem(LOGINKEY); }catch{}
+  $('ghPanel').hidden=true; startPolling(); renderTable(); toast('Token removed. The shared CSV is view only on this device.');
+};
+$('ghPanel').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const repo=$('ghRepo').value.trim().replace(/^https?:\/\/github\.com\//i,'').replace(/\.git$/,'').replace(/\/+$/,'');
+  const path=($('ghPath').value.trim()||'contacts.csv').replace(/^\/+/,''), branch=$('ghBranch').value.trim()||'main';
+  const tok=$('ghToken').value.trim()||token;
+  const msg=$('ghMsg'); msg.className='ghmsg';
+  if(!/^[\w.-]+\/[\w.-]+$/.test(repo)){ msg.textContent='Enter the repository as owner/name, for example shivamkmani/card-capture.'; msg.className='ghmsg err'; return; }
+  const prevCfg=cfg, prevTok=token, prevLogin=ghLogin;
+  cfg={repo,path,branch}; token=tok;
+  msg.textContent='Checking…'; $('ghSave').disabled=true;
+  try{
+    if(token){ const u=await ghFetch('/user'); if(!u.ok) throw await ghErr(u); ghLogin=(await u.json()).login||''; }
+    const rr=await ghFetch(`/repos/${repo}`); if(!rr.ok) throw await ghErr(rr);
+    const info=await rr.json();
+    if(token&&info.permissions&&info.permissions.push===false) throw Object.assign(new Error(''),{status:403});
+    const br=await ghFetch(`/repos/${repo}/branches/${encodeURIComponent(branch)}`); if(!br.ok) throw await ghErr(br);
+    writeJSON(localStorage,GHKEY,{repo,path,branch});
+    try{ localStorage.removeItem(TOKKEY); sessionStorage.removeItem(TOKKEY); if(token) ($('ghRemember').checked?localStorage:sessionStorage).setItem(TOKKEY,token); ghLogin?localStorage.setItem(LOGINKEY,ghLogin):localStorage.removeItem(LOGINKEY); }catch{}
+    $('ghPanel').hidden=true; etag=''; syncErr='';
+    if(prevCfg.repo!==repo||prevCfg.path!==path||prevCfg.branch!==branch) rows=[];
+    await sync(false); startPolling();
+    toast(token?`Connected as ${ghLogin}. New contacts go to the shared CSV.`:'Showing the shared CSV, view only.');
+  }catch(err){ cfg=prevCfg; token=prevTok; ghLogin=prevLogin; msg.textContent=explain(err); msg.className='ghmsg err'; }
+  finally{ $('ghSave').disabled=false; }
+});
+$('importLocal').onclick=async()=>{
+  if(!token){ needToken('add these contacts to the shared CSV'); return; }
+  const localRows=readJSON(localStorage,STORE,[]).map(r=>({...r,id:r.id||newId(),added:r.added||((r.scanned||today())+' 00:00:00'),by:r.by||ghLogin}));
+  localRows.forEach(r=>delete r.scanned);
+  if(!localRows.length) return;
+  $('importLocal').disabled=true;
+  try{
+    const next=await ghWrite(list=>{ const ids=new Set(list.map(r=>r.id)); return [...localRows.filter(r=>!ids.has(r.id)),...list]; },`Add ${localRows.length} contact${localRows.length>1?'s':''} from a browser`);
+    rows=mergedView(next); writeJSON(localStorage,STORE,null); renderTable(); toast(`Added ${localRows.length} contact${localRows.length>1?'s':''} to the shared CSV.`);
+  }catch(e){ toast('Not added. '+explain(e)); }
+  finally{ $('importLocal').disabled=false; }
+};
+
+// ---------- copy / download / share ----------
 async function copy(text,msg){
   $('fallbackCopy').hidden=true;
   try{ await navigator.clipboard.writeText(text); toast(msg); }
   catch{ const b=$('copyBox'); b.value=text; $('fallbackCopy').hidden=false; b.focus(); b.select(); try{ if(document.execCommand('copy')){ $('fallbackCopy').hidden=true; toast(msg); } }catch{} }
 }
-$('copyAll').onclick=()=>copy(toTSV(true),`Copied ${rows.length} card${rows.length>1?'s':''} with headers. Paste into cell A1.`);
-$('copyRows').onclick=()=>copy(toTSV(false),`Copied ${rows.length} row${rows.length>1?'s':''}. Paste below your last row.`);
+$('copyAll').onclick=()=>copy(toTSV(true),`Copied ${rows.length} card${rows.length>1?'s':''} with headers, newest first. Paste into cell A1.`);
+$('copyRows').onclick=()=>copy(toTSV(false),`Copied ${rows.length} row${rows.length>1?'s':''}, newest first.`);
 $('csvBtn').onclick=async()=>{
-  const data='﻿'+toCSV(), filename=`business-cards-${today()}.csv`;
+  const data='\uFEFF'+toCSV(), filename=`business-cards-${today()}.csv`;
   if(dlApi){ try{ const r=await dlApi.save({filename,data}); if(r?.status==='saved') toast('CSV saved'); }catch(e){ if(e?.code!=='cancelled') toast('Download was not completed.'); } return; }
   try{ const u=URL.createObjectURL(new Blob([data],{type:'text/csv;charset=utf-8'})); const a=document.createElement('a'); a.href=u; a.download=filename; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(u),2000); }
   catch{ toast('Downloads are blocked here. Use "Copy with headers" instead.'); }
@@ -981,7 +1403,7 @@ $('shareBtn').onclick=async()=>{
   try{ await navigator.share({files:[file],title:'Business cards'}); }
   catch(e){ if(e&&e.name!=='AbortError') toast('Sharing did not work here. Use Download .csv instead.'); }
 };
-$('clearAll').onclick=e=>{ const b=e.currentTarget; if(b.dataset.armed){ rows=[]; save(); renderTable(); delete b.dataset.armed; b.textContent='Clear'; toast('Table cleared'); } else { b.dataset.armed='1'; b.textContent=`Clear all ${rows.length}?`; setTimeout(()=>{ delete b.dataset.armed; b.textContent='Clear'; },3500); } };
+$('clearAll').onclick=e=>{ if(cfg) return; const b=e.currentTarget; if(b.dataset.armed){ rows=[]; saveLocal(); renderTable(); delete b.dataset.armed; b.textContent='Clear'; toast('Table cleared'); } else { b.dataset.armed='1'; b.textContent=`Clear all ${rows.length}?`; setTimeout(()=>{ delete b.dataset.armed; b.textContent='Clear'; },3500); } };
 
 // ---------- engine detection ----------
 function setEngine(e){
@@ -1021,6 +1443,33 @@ document.addEventListener('keydown',e=>{
 });
 setOrient(orient);
 renderTable(); setState('front');
+if(cfg){ rows=mergedView([]); renderTable(); sync(true); startPolling(); }
+// ---------- welcome screen (once per browser session) ----------
+(function(){
+  const wl=$('welcome'); let seen=false;
+  try{ seen=sessionStorage.getItem('cardcapture.welcomed')==='1'; }catch{}
+  if(seen) return;
+  let closed=false, timer=null;
+  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function close(){
+    if(closed) return; closed=true; clearTimeout(timer);
+    try{ sessionStorage.setItem('cardcapture.welcomed','1'); }catch{}
+    window.removeEventListener('keydown',onKey,true);
+    if(reduce){ wl.hidden=true; return; }
+    wl.classList.add('out'); setTimeout(()=>{ wl.hidden=true; },480);
+  }
+  function onKey(e){ if(['Enter',' ','Escape'].includes(e.key)){ e.preventDefault(); e.stopImmediatePropagation(); close(); } }
+  wl.hidden=false;
+  wl.addEventListener('click',close);
+  window.addEventListener('keydown',onKey,true);
+  setTimeout(()=>{ try{ $('wlGo').focus({preventScroll:true}); }catch{} }, reduce?0:3000);
+  // after the intro plays, a short countdown on the button, then the scanner
+  const start=reduce?600:3300, wait=3400;
+  wl.style.setProperty('--wl-wait',wait+'ms');
+  setTimeout(()=>{ if(!closed) wl.classList.add('counting'); },start);
+  timer=setTimeout(close,start+wait);
+})();
+
 startCamera();
 enginePromise=detectEngine();
 })();
